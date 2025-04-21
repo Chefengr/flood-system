@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Detection & Route Optimization</title>
+    <link rel="stylesheet" href="style/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="scripts/script.js" defer></script>
+    <!-- Added Font Awesome for better icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #mobile-menu {
+            display: none;
+        }
+    
+        .form-container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+    
+        .bg-flood-pattern {
+            background-image: url('img/flood-pattern.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+    
+        .bg-flood-pattern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(246, 59, 131, 0.679); /* Flood overlay */
+            z-index: 0;
+        }
+    
+        .form-content {
+            position: relative;
+            z-index: 1;
+        }
+    
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    
+        .animate-fade-out {
+            animation: fadeOut 0.5s ease-in-out;
+        }
+    
+        /* Chatbot styles */
+        #chat-button {
+            background: linear-gradient(135deg, #00bcd4, #2196f3, #f63b83); /* Water to alert tones */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    
+        #chat-button:hover {
+            transform: scale(1.05);
+        }
+    
+        #chat-container {
+            background: linear-gradient(to bottom right, #e0f7fa, #b2ebf2, #81d4fa); /* Light blue flood theme */
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 400px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+        }
+    
+        #chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+    
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+    
+        #chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+    
+        #chat-messages::-webkit-scrollbar-thumb {
+            background-color: #90caf9;
+            border-radius: 3px;
+        }
+    
+        .chat-message {
+            background-color: #ffffffcc;
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin: 8px 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+    
+        .chat-message.user {
+            background-color: #d1c4e9;
+            align-self: flex-end;
+        }
+    
+        .chat-message.bot {
+            background-color: #e1f5fe;
+            align-self: flex-start;
+        }
+    </style>
+    
+</head>
+<body class="bg-gray-100">
+    <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
+        <img class="w-32 cursor-pointer" src="../img/logo.png" alt="Flood Detection & Route Optimization Logo">
+        <ul class="hidden md:flex space-x-5">
+            <li><a href="index.html" class="hover:text-blue-200 font-bold">Home</a></li>
+            <li><a href="about.html" class="hover:text-blue-200">About Us</a></li>
+            <li><a href="contact.html" class="hover:text-blue-200">Contact Us</a></li>
+            <li><a href="navigation.html" class="hover:text-blue-200">Navigation</a></li>
+            <li><a href="data.html" class="hover:text-blue-200">Data</a></li>
+        </ul>
+        <div class="md:hidden">
+            <button onclick="onToggleMenu()" class="text-2xl">&#9776;</button>
+        </div>
+    </nav>
+    
+    <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg">
+        <a href="index.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Home</a>
+        <a href="about.html" class="block py-1 hover:bg-blue-600 px-2 rounded">About Us</a>
+        <a href="contact.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Contact Us</a>
+        <a href="navigation.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Navigation</a>
+        <a href="data.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Data</a>
+    </div>
+    
+    <!-- Enhanced header with background image and overlay -->
+    <header class="relative flex flex-col items-center justify-center h-96 bg-blue-400 text-white text-center bg-cover bg-center" style="background-image: url('img/flood-background.jpg');">
+        <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
+        <div class="relative z-10 px-4">
+            <h1 class="text-4xl md:text-5xl font-bold">Flood Detection & Route Optimization</h1>
+            <p class="mt-4 text-lg md:text-xl">Ensuring safer journeys during extreme weather conditions</p>
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="navigation.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg">
+                    <i class="fas fa-route mr-2"></i>Plan Safe Route
+                </a>
+                <a href="data.html" class="bg-white hover:bg-gray-100 text-blue-800 font-bold py-3 px-6 rounded-lg transition duration-300 shadow-lg">
+                    <i class="fas fa-chart-line mr-2"></i>View Flood Data
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features section -->
+    <section class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Our Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                    <div class="text-blue-500 text-4xl mb-4 flex justify-center">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-center">Real-time Navigation</h3>
+                    <p class="text-gray-600">Get optimized routes that avoid flooded areas for safer travel during extreme weather conditions.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                    <div class="text-blue-500 text-4xl mb-4 flex justify-center">
+                        <i class="fas fa-water"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-center">Flood Detection</h3>
+                    <p class="text-gray-600">Access real-time data on flood levels and affected areas to make informed travel decisions.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                    <div class="text-blue-500 text-4xl mb-4 flex justify-center">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-center">Alert System</h3>
+                    <p class="text-gray-600">Receive timely alerts about new flood incidents and changes in flood severity levels.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live status section -->
+    <section class="py-12 px-4 bg-blue-50">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">Current Flood Status</h2>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">System Status</h3>
+                    <span id="lastUpdated" class="text-sm text-gray-500">Last updated: Loading...</span>
+                </div>
+                <div id="floodStatusContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 border rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">Active Flood Alerts</h4>
+                        <div id="activeAlerts" class="text-3xl font-bold text-red-500">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">System Status</h4>
+                        <div id="systemStatus" class="text-3xl font-bold text-green-500">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="data.html" class="inline-block text-blue-600 hover:text-blue-800 font-medium">
+                        View detailed flood data <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+<!-- this section is for flooded roads images -->
+    <section class="p-10 bg-white">
+        <h2 class="text-2xl font-bold text-center mb-6">Recent Flood Incidents</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            <div class="overflow-hidden rounded-lg shadow-md">
+                <img src="../img/flooded.jpg" alt="Flooded Road" class="w-full h-64 object-cover">
+                <div class="p-4 bg-gray-50">
+                    <h3 class="font-bold">Flooded Highway</h3>
+                    <p class="text-sm text-gray-600">Major flooding on Highway 101 causing traffic diversions</p>
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-lg shadow-md">
+                <img src="../img/residential.jpg" alt="Flooded Residential Area" class="w-full h-64 object-cover">
+                <div class="p-4 bg-gray-50">
+                    <h3 class="font-bold">Residential Area Flooding</h3>
+                    <p class="text-sm text-gray-600">Residential streets affected by recent heavy rainfall</p>
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-lg shadow-md">
+                <img src="../img/rescue .jpg" alt="Rescue Operations" class="w-full h-64 object-cover">
+                <div class="p-4 bg-gray-50">
+                    <h3 class="font-bold">Emergency Response</h3>
+                    <p class="text-sm text-gray-600">Rescue teams helping stranded motorists in flooded areas</p>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-8">
+            <a href="data.html" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                View All Flood Reports <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </section>
+<!-- this section is for footer -->
+    <footer class="bg-blue-600 text-white py-4">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- About Us Section -->
+                <div>
+                    <h3 class="text-base font-bold mb-2">About Us</h3>
+                    <p class="text-blue-100 text-xs">
+                        We provide real-time flood detection and route optimization to ensure safer travel during extreme weather conditions.
+                    </p>
+                </div>
+
+                <!-- Quick Links Section -->
+                <div>
+                    <h3 class="text-base font-bold mb-2">Quick Links</h3>
+                    <ul class="space-y-0.5 text-xs text-blue-100">
+                        <li><a href="index.html" class="hover:underline">Home</a></li>
+                        <li><a href="about.html" class="hover:underline">About Us</a></li>
+                        <li><a href="navigation.html" class="hover:underline">Navigation</a></li>
+                        <li><a href="flood-data.html" class="hover:underline">Flood Data</a></li>
+                    </ul>
+                </div>
+
+                <!-- Connect With Us Section -->
+                <div class="flex flex-col items-start">
+                    <h3 class="text-base font-bold mb-2">Connect With Us</h3>
+                    <div class="flex space-x-3 text-lg">
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="mt-4 text-center text-xs text-blue-100">
+                © 2025 FloodSafe Navigation. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add JavaScript for dynamic content -->
+    <script>
+        // Toggle mobile menu
+        function onToggleMenu() {
+            const menu = document.getElementById('menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Simulate fetching flood status data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update last updated time
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 'Last updated: ' + now.toLocaleString();
+            
+            // Simulate loading flood data (replace with actual API call)
+            setTimeout(() => {
+                document.getElementById('activeAlerts').innerHTML = '3 <span class="text-sm font-normal">active alerts</span>';
+                document.getElementById('systemStatus').innerHTML = 'Online <i class="fas fa-check-circle ml-2"></i>';
+            }, 1000);
+
+            // Handle contact form submission
+            document.getElementById('contactForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formStatus = document.getElementById('formStatus');
+                
+                // Simulate form submission
+                formStatus.classList.remove('hidden');
+                formStatus.classList.add('text-blue-500');
+                formStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending message...';
+                
+                setTimeout(() => {
+                    formStatus.classList.remove('text-blue-500');
+                    formStatus.classList.add('text-green-500');
+                    formStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Message sent successfully!';
+                    document.getElementById('contactForm').reset();
+                }, 1500);
+            });
+        });
+    </script>
+     <!-- Add chatbot script -->
+  <script src="script/chatbot.js"></script>
+</body>
+</html>

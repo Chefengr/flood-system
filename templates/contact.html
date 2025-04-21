@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Flood Detection & Route Optimization</title>
+    <link rel="stylesheet" href="style/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Added Font Awesome for better icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="scripts/script.js" defer></script>
+    <style>
+        #mobile-menu {
+            display: none;
+        }
+    
+        .form-container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+    
+        .bg-flood-pattern {
+            background-image: url('img/flood-pattern.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+    
+        .bg-flood-pattern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(246, 59, 131, 0.679); /* Flood overlay */
+            z-index: 0;
+        }
+    
+        .form-content {
+            position: relative;
+            z-index: 1;
+        }
+    
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    
+        .animate-fade-out {
+            animation: fadeOut 0.5s ease-in-out;
+        }
+    
+        /* Chatbot styles */
+        #chat-button {
+            background: linear-gradient(135deg, #00bcd4, #2196f3, #f63b83); /* Water to alert tones */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    
+        #chat-button:hover {
+            transform: scale(1.05);
+        }
+    
+        #chat-container {
+            background: linear-gradient(to bottom right, #e0f7fa, #b2ebf2, #81d4fa); /* Light blue flood theme */
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 400px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+        }
+    
+        #chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+    
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+    
+        #chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+    
+        #chat-messages::-webkit-scrollbar-thumb {
+            background-color: #90caf9;
+            border-radius: 3px;
+        }
+    
+        .chat-message {
+            background-color: #ffffffcc;
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin: 8px 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+    
+        .chat-message.user {
+            background-color: #d1c4e9;
+            align-self: flex-end;
+        }
+    
+        .chat-message.bot {
+            background-color: #e1f5fe;
+            align-self: flex-start;
+        }
+    </style>
+    
+</head>
+<body class="bg-gray-100">
+    <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
+        <img class="w-32 cursor-pointer" src="../img/logo.png" alt="Logo">
+        <ul class="hidden md:flex space-x-5">
+            <li><a href="index.html" class="hover:text-blue-200">Home</a></li>
+            <li><a href="about.html" class="hover:text-blue-200">About Us</a></li>
+            <li><a href="contact.html" class="hover:text-blue-200 font-bold underline">Contact Us</a></li>
+            <li><a href="navigation.html" class="hover:text-blue-200">Navigation</a></li>
+            <li><a href="data.html" class="hover:text-blue-200">Data</a></li>
+        </ul>
+        <div class="md:hidden">
+            <button onclick="onToggleMenu()" class="text-2xl" aria-label="Toggle menu">&#9776;</button>
+        </div>
+    </nav>
+
+    <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg">
+        <a href="index.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Home</a>
+        <a href="about.html" class="block py-1 hover:bg-blue-600 px-2 rounded">About Us</a>
+        <a href="contact.html" class="block py-1 hover:bg-blue-600 px-2 rounded font-bold bg-blue-600">Contact Us</a>
+        <a href="navigation.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Navigation</a>
+        <a href="data.html" class="block py-1 hover:bg-blue-600 px-2 rounded">Data</a>
+    </div>
+
+    <!-- Enhanced header with background image -->
+    <header class="relative flex flex-col items-center justify-center h-64 bg-blue-400 text-white text-center bg-cover bg-center" style="background-image: url('img/contact-header.jpg');">
+        <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
+        <div class="relative z-10">
+            <h1 class="text-4xl font-bold">Contact Us</h1>
+            <p class="mt-2 text-lg">We're here to help and listen to your concerns</p>
+        </div>
+    </header>
+
+    <!-- Main content wrapper with padding for footer -->
+    <main class="pb-16">
+        <!-- Priority message section -->
+        <section class="p-8 text-center">
+            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-center mb-4">
+                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-heart text-2xl"></i>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold">Your Safety Is Our Priority</h2>
+                <p class="mt-3 text-gray-600">
+                    We value your feedback and reports. Your information helps us improve our flood detection system and potentially save lives. Whether you're reporting a flood, suggesting an improvement, or just have a question - we're here to listen.
+                </p>
+            </div>
+        </section>
+
+        <!-- Contact options section -->
+        <section class="p-8">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Contact form -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-envelope text-blue-500 mr-2"></i>
+                        Send Us a Message
+                    </h3>
+                    <form id="contactForm" class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-gray-700 mb-1">Your Name</label>
+                            <input type="text" id="name" name="name" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-gray-700 mb-1">Email Address</label>
+                            <input type="email" id="email" name="email" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+                        </div>
+                        <div>
+                            <label for="subject" class="block text-gray-700 mb-1">Subject</label>
+                            <select id="subject" name="subject" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select a subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="support">Technical Support</option>
+                                <option value="feedback">Feedback</option>
+                                <option value="partnership">Partnership Opportunity</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="message" class="block text-gray-700 mb-1">Your Message</label>
+                            <textarea id="message" name="message" rows="4" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">
+                            <i class="fas fa-paper-plane mr-2"></i>Send Message
+                        </button>
+                        <div id="formStatus" class="mt-3 text-center hidden"></div>
+                    </form>
+                </div>
+
+                <!-- Report flooding section -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-water text-blue-500 mr-2"></i>
+                        Report Flooding
+                    </h3>
+                    <form id="floodReportForm" class="space-y-4">
+                        <div>
+                            <label for="reporter_name" class="block text-gray-700 mb-1">Your Name</label>
+                            <input type="text" id="reporter_name" name="reporter_name" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="reporter_phone" class="block text-gray-700 mb-1">Phone Number</label>
+                            <input type="tel" id="reporter_phone" name="reporter_phone" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="location" class="block text-gray-700 mb-1">Flood Location</label>
+                            <input type="text" id="location" name="location" required placeholder="Street address or landmark" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="severity" class="block text-gray-700 mb-1">Severity Level</label>
+                                <select id="severity" name="severity" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select level</option>
+                                    <option value="minor">Minor (Ankle deep)</option>
+                                    <option value="moderate">Moderate (Knee deep)</option>
+                                    <option value="severe">Severe (Waist deep)</option>
+                                    <option value="extreme">Extreme (Above waist)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="road_status" class="block text-gray-700 mb-1">Road Status</label>
+                                <select id="road_status" name="road_status" required class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select status</option>
+                                    <option value="passable">Passable to all vehicles</option>
+                                    <option value="limited">Limited to high vehicles</option>
+                                    <option value="impassable">Impassable to all vehicles</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="description" class="block text-gray-700 mb-1">Additional Details</label>
+                            <textarea id="description" name="description" rows="3" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Describe the situation, any hazards, or other important details"></textarea>
+                        </div>
+                        <div>
+                            <label for="photo" class="block text-gray-700 mb-1">Upload Photo (optional)</label>
+                            <input type="file" id="photo" name="photo" accept="image/*" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Submit Flood Report
+                        </button>
+                        <div id="reportStatus" class="mt-3 text-center hidden"></div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact information section -->
+        <section class="p-8 bg-white">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-3xl font-bold text-center mb-8">Other Ways to Reach Us</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-4 hover:bg-blue-50 rounded-lg transition duration-300">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white mx-auto mb-4">
+                            <i class="fas fa-phone text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Call Us</h3>
+                        <p class="text-gray-600">Our support team is available 24/7</p>
+                        <a href="tel:+1234567890" class="text-blue-500 font-bold block mt-2">+1 (234) 567-890</a>
+                    </div>
+                    <div class="text-center p-4 hover:bg-blue-50 rounded-lg transition duration-300">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white mx-auto mb-4">
+                            <i class="fas fa-envelope text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Email Us</h3>
+                        <p class="text-gray-600">Send us an email anytime</p>
+                        <a href="mailto:support@flooddetection.com" class="text-blue-500 font-bold block mt-2">support@flooddetection.com</a>
+                    </div>
+                    <div class="text-center p-4 hover:bg-blue-50 rounded-lg transition duration-300">
+                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white mx-auto mb-4">
+                            <i class="fas fa-map-marker-alt text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Visit Us</h3>
+                        <p class="text-gray-600">Our office location</p>
+                        <address class="text-blue-500 font-bold block mt-2 not-italic">
+                            123 Tech Plaza, Suite 400<br>
+                            San Francisco, CA 94107
+                        </address>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Same footer as about.html -->
+    <footer class="bg-blue-600 text-white py-4">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- About Us Section -->
+                <div>
+                    <h3 class="text-base font-bold mb-2">About Us</h3>
+                    <p class="text-blue-100 text-xs">
+                        We provide real-time flood detection and route optimization to ensure safer travel during extreme weather conditions.
+                    </p>
+                </div>
+    
+                <!-- Quick Links Section -->
+                <div>
+                    <h3 class="text-base font-bold mb-2">Quick Links</h3>
+                    <ul class="space-y-0.5 text-xs text-blue-100">
+                        <li><a href="index.html" class="hover:underline">Home</a></li>
+                        <li><a href="about.html" class="hover:underline">About Us</a></li>
+                        <li><a href="navigation.html" class="hover:underline">Navigation</a></li>
+                        <li><a href="flood-data.html" class="hover:underline">Flood Data</a></li>
+                    </ul>
+                </div>
+    
+                <!-- Connect With Us Section -->
+                <div class="flex flex-col items-start">
+                    <h3 class="text-base font-bold mb-2">Connect With Us</h3>
+                    <div class="flex space-x-3 text-lg">
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Footer Bottom -->
+            <div class="mt-4 text-center text-xs text-blue-100">
+                © 2025 FloodSafe Navigation. All rights reserved.
+            </div>
+        </div>
+    </footer>
+    
+
+    <script>
+        // Toggle mobile menu
+        function onToggleMenu() {
+            const menu = document.getElementById('menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Handle contact form submission
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formStatus = document.getElementById('formStatus');
+            
+            // Simulate form submission
+            formStatus.classList.remove('hidden');
+            formStatus.classList.add('text-blue-500');
+            formStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending message...';
+            
+            setTimeout(() => {
+                formStatus.classList.remove('text-blue-500');
+                formStatus.classList.add('text-green-500');
+                formStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Message sent successfully! We\'ll get back to you soon.';
+                document.getElementById('contactForm').reset();
+            }, 1500);
+        });
+
+        // Handle flood report form submission
+        document.getElementById('floodReportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const reportStatus = document.getElementById('reportStatus');
+            
+            // Simulate form submission
+            reportStatus.classList.remove('hidden');
+            reportStatus.classList.add('text-blue-500');
+            reportStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting report...';
+            
+            setTimeout(() => {
+                reportStatus.classList.remove('text-blue-500');
+                reportStatus.classList.add('text-green-500');
+                reportStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Report submitted successfully! Thank you for helping keep our community safe.';
+                document.getElementById('floodReportForm').reset();
+            }, 1500);
+        });
+    </script>
+     <!-- Add chatbot script -->
+  <script src="script/chatbot.js"></script>
+</body>
+</html>
