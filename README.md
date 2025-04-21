@@ -29,5 +29,5 @@ A web-based flood monitoring system that detects flooded roads using sensors con
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/flood-system.git
+   git clone https://github.com/chefengr/flood-system.git
    cd flood-system
