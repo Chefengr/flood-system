@@ -1,0 +1,54 @@
+body {
+    background-color: #f7f9fc;
+    font-family: Arial, sans-serif;
+}
+
+/* Logo */
+img.w-32 {
+    border-radius: 50%; /* Makes the image round */
+    object-fit: cover;  /* Ensures the image fills the circular space */
+    width: 8rem; /* Adjust size if needed */
+    height: 8rem; /* Maintain a perfect circle */
+}
+
+.about-header {
+    background-color: #0077b6;
+    color: white;
+    padding: 50px 20px;
+    text-align: center;
+}
+
+.about-header h1 {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.about-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.about-container h2 {
+    font-size: 2rem;
+    color: #333;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.about-container p {
+    font-size: 1.2rem;
+    color: #555;
+    text-align: justify;
+    line-height: 1.6;
+}
+
+.about-footer {
+    background-color: #0077b6;
+    color: white;
+    text-align: center;
+    padding: 15px;
+}

@@ -1,0 +1,155 @@
+/* General Styling */
+:root {
+    --primary-color: #6ea4dd;
+    --secondary-color: #7fc7d7ae;
+    --background-color: #f4f4f4;
+    --text-color: #000000;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* Logo */
+img.w-32 {
+    border-radius: 50%; /* Makes the image round */
+    object-fit: cover;  /* Ensures the image fills the circular space */
+    width: 8rem;        /* Adjust size if needed */
+    height: 8rem;       /* Maintain a perfect circle */
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+/* Header - Gradient Navbar */
+header {
+    background: linear-gradient(90deg, #00bcd4, #2196f3, #f63b83); /* Water to alert tones */
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Buttons */
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+/* Mobile menu */
+#mobile-menu {
+    display: none;
+}
+
+/* Form container */
+.form-container {
+    max-width: 450px;
+    margin: 0 auto;
+}
+
+/* Background pattern with overlay */
+.bg-flood-pattern {
+    background-image: url('img/flood-pattern.png');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.bg-flood-pattern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(246, 59, 131, 0.679); /* Semi-transparent pink overlay */
+    z-index: 0;
+}
+
+.form-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-fade-out {
+    animation: fadeOut 0.5s ease-in-out;
+}
+
+/* Chatbot styles */
+#chat-button {
+    background: linear-gradient(135deg, #00bcd4, #2196f3, #f63b83); /* Flood-themed gradient */
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#chat-button:hover {
+    transform: scale(1.05);
+}
+
+/* Chat messages scrollbar */
+#chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+#chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Chat container (optional enhancement) */
+#chat-container {
+    background: linear-gradient(to bottom right, #e0f7fa, #b2ebf2, #81d4fa);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
