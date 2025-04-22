@@ -1,6 +1,12 @@
 from flask import Flask
 
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
+    
+    # Lazy import to avoid circular imports
+    from . import routes
+    app.register_blueprint(routes.bp)
+    
+    return app
 
-# Remove this line: "from app_flood import routes"
-# Instead, import routes AFTER creating the app (or inside a function)
+app = create_app()  # This creates the app instance
