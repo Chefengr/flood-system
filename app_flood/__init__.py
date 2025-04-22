@@ -1,12 +1,13 @@
+import os
 from flask import Flask
 
 def create_app():
-    app = Flask(__name__)
+    # Get absolute path to templates
+    template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
     
-    # Lazy import to avoid circular imports
-    from . import routes
-    app.register_blueprint(routes.bp)
+    app = Flask(__name__,
+               template_folder=template_dir,
+               static_folder='../static')
     
+    # Rest of your config...
     return app
-
-app = create_app()  # This creates the app instance
