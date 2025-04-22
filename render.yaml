@@ -3,5 +3,5 @@ services:
     name: your-app-name
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+   startCommand: gunicorn app_flood.app:app  # Adjusted path
     env: python
