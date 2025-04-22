@@ -85,7 +85,7 @@ def about():
     return render_template('about.html')
     
 @bp.route('/contact.html')
-def about():
+def contact():
     return render_template('contact.html')
 
 @bp.route('/data.html')
