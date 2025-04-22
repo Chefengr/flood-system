@@ -5,6 +5,12 @@ from datetime import datetime, timedelta
 import logging
 import time
 import os
+# app_flood/app.py
+from app_flood import app  # Import the app from __init__.py
+
+@app.route("/")
+def home():
+    return "Hello, Render!"
 from dotenv import load_dotenv
 
 # Load environment variables
