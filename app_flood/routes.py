@@ -130,7 +130,13 @@ def receive_device_data():
 # @bp.route(...) 
 # def ...():
 #     ...
-
+@bp.route('/debug-config')
+def debug_config():
+    return jsonify({
+        "template_folder": current_app.template_folder,
+        "static_folder": current_app.static_folder,
+        "root_path": current_app.root_path
+    })
 # ======================
 # LEGACY SUPPORT (if needed)
 # ======================
@@ -161,18 +167,4 @@ def initialize_database():
         finally:
             if conn and conn.is_connected():
                 conn.close()
-@bp.route('/debug-templates')
-def debug_templates():
-    import os
-    from flask import current_app
-    
-    template_dir = current_app.template_folder
-    exists = os.path.exists(template_dir)
-    files = os.listdir(template_dir) if exists else []
-    
-    return jsonify({
-        "template_folder": template_dir,
-        "folder_exists": exists,
-        "templates_available": files,
-        "current_working_directory": os.getcwd()
-    })
+
