@@ -132,12 +132,23 @@
     <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
         <img class="w-32 cursor-pointer" src="../img/logo.png" alt="Flood Detection & Route Optimization Logo">
         <ul class="hidden md:flex space-x-5">
-        <li><a href="/" class="hover:text-blue-200">Home</a></li>
-        <li><a href="/about" class="hover:text-blue-200">About Us</a></li>
-        <li><a href="/contact" class="hover:text-blue-200">Contact Us</a></li>
-        <li><a href="/navigation" class="hover:text-blue-200">Navigation</a></li>
-        <li><a href="/data" class="hover:text-blue-200">Data</a></li>
-        </ul>
+    <li>
+        <a href="/" class="hover:text-blue-200 {% if request.path == '/' %}font-bold underline{% endif %}">Home</a>
+    </li>
+    <li>
+        <a href="/about" class="hover:text-blue-200 {% if request.path == '/about' %}font-bold underline{% endif %}">About Us</a>
+    </li>
+    <li>
+        <a href="/contact" class="hover:text-blue-200 {% if request.path == '/contact' %}font-bold underline{% endif %}">Contact Us</a>
+    </li>
+    <li>
+        <a href="/navigation" class="hover:text-blue-200 {% if request.path == '/navigation' %}font-bold underline{% endif %}">Navigation</a>
+    </li>
+    <li>
+        <a href="/data" class="hover:text-blue-200 {% if request.path == '/data' %}font-bold underline{% endif %}">Data</a>
+    </li>
+</ul>
+
 
         <div class="md:hidden">
             <button onclick="onToggleMenu()" class="text-2xl">&#9776;</button>
