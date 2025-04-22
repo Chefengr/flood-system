@@ -76,7 +76,7 @@ def get_dashboard_metrics():
 # ROUTES (identical functionality, only @bp.route changed)
 # ======================
 # Page Routes
-@bp.route('/')
+@bp.route('/index')
 def index():
     return render_template('index.html')
 
