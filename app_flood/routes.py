@@ -77,11 +77,11 @@ def get_dashboard_metrics():
 # ======================
 @bp.route('/')
 def home():
-    return render_template('dj_index.html')
+    return render_template('index.html')
 
 @bp.route('/navigation')
 def navigation():
-    return render_template('dj_navigation.html')
+    return render_template('navigation.html')
 
 @bp.route('/api/device-data', methods=['POST'])
 def receive_device_data():
