@@ -10,3 +10,7 @@ def home():
 @bp.route('/about')
 def about():
     return "About Page"
+
+@bp.route('/api/data')
+def get_data():
+    return {"message": "API response"}
