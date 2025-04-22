@@ -1,13 +1,24 @@
-import os
 from flask import Flask
+from flask_cors import CORS
+import os
 
 def create_app():
-    # Get absolute path to templates
-    template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+    # Configure absolute paths
+    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates')
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
     
     app = Flask(__name__,
-               template_folder=template_dir,
-               static_folder='../static')
+              template_folder=template_dir,
+              static_folder=static_dir)
     
-    # Rest of your config...
+    # Configure CORS (keep your existing settings)
+    CORS(app, resources={
+        r"/api/device-data": {"origins": ["http://192.168.93.4"]},
+        r"/api/*": {"origins": "*"}
+    })
+
+    # Register blueprint with URL prefix
+    from .routes import bp
+    app.register_blueprint(bp, url_prefix='/')
+
     return app
