@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: your-app-name
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    env: python
