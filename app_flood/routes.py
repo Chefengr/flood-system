@@ -75,13 +75,27 @@ def get_dashboard_metrics():
 # ======================
 # ROUTES (identical functionality, only @bp.route changed)
 # ======================
+# Page Routes
 @bp.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-@bp.route('/navigation')
+@bp.route('/about.html')
+def about():
+    return render_template('about.html')
+    
+@bp.route('/contact.html')
+def about():
+    return render_template('contact.html')
+
+@bp.route('/data.html')
+def data():
+    return render_template('data.html')
+
+@bp.route('/navigation.html')
 def navigation():
     return render_template('navigation.html')
+
 
 @bp.route('/api/device-data', methods=['POST'])
 def receive_device_data():
