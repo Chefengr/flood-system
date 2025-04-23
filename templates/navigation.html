@@ -312,12 +312,14 @@
   </div>
 
   <!-- Mobile Menu Links -->
-  <div id="mobile-menu" class="md:hidden bg-blue-700 px-4 py-2 hidden">
-    <a href="index.html" class="block py-2 hover:bg-blue-600 px-2 rounded">Home</a>
-    <a href="navigation.html" class="block py-2 hover:bg-blue-600 px-2 rounded font-bold">Navigation</a>
-    <a href="data.html" class="block py-2 hover:bg-blue-600 px-2 rounded">Flood Data</a>
-    <a href="about.html" class="block py-2 hover:bg-blue-600 px-2 rounded">About</a>
+  <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg space-y-2">
+  <a href="/" class="block px-2 py-1 rounded {% if request.path == '/' %}font-bold underline{% else %}hover:underline{% endif %}">Home</a>
+  <a href="/about" class="block px-2 py-1 rounded {% if request.path == '/about' %}font-bold underline{% else %}hover:underline{% endif %}">About Us</a>
+  <a href="/contact" class="block px-2 py-1 rounded {% if request.path == '/contact' %}font-bold underline{% else %}hover:underline{% endif %}">Contact Us</a>
+  <a href="/navigation" class="block px-2 py-1 rounded {% if request.path == '/navigation' %}font-bold underline{% else %}hover:underline{% endif %}">Navigation</a>
+  <a href="/data" class="block px-2 py-1 rounded {% if request.path == '/data' %}font-bold underline{% else %}hover:underline{% endif %}">Data</a>
   </div>
+
 </nav>
   
   <!-- Main Content -->
