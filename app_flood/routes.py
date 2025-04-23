@@ -1,13 +1,12 @@
 from flask import Blueprint, jsonify, request, render_template, current_app
-from datetime import datetime, timedelta
 import mysql.connector
-import logging
-import time
+from datetime import datetime
 import os
+import time
 
 bp = Blueprint('routes', __name__)
 
-# Database configuration
+# ===== DATABASE CONFIG =====
 db_config = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'user': os.getenv('DB_USER', 'root'),
@@ -15,9 +14,7 @@ db_config = {
     'database': os.getenv('DB_NAME', 'flood_detection')
 }
 
-# ======================
-# HELPER FUNCTIONS
-# ======================
+# ===== DATABASE HELPER =====
 def get_db():
     retry_count = 0
     max_retries = 3
@@ -27,11 +24,11 @@ def get_db():
             return conn
         except mysql.connector.Error as err:
             retry_count += 1
-            current_app.logger.error(f"Database connection failed (attempt {retry_count}/{max_retries}): {err}")
-            if retry_count >= max_retries:
-                raise
+            current_app.logger.error(f"DB connection failed (attempt {retry_count}): {err}")
             time.sleep(2)
+    raise Exception("DB connection failed after retries.")
 
+# ===== DASHBOARD METRICS HELPER =====
 def get_dashboard_metrics():
     conn = None
     try:
@@ -40,80 +37,97 @@ def get_dashboard_metrics():
 
         cursor.execute("""
             SELECT 
-                COUNT(DISTINCT node_id) as active_nodes,
-                MAX(water_level) as highest_reading,
-                AVG(water_level) as average_level,
-                MAX(timestamp) as last_update,
-                SUM(CASE WHEN flood_status = 'DANGER' THEN 1 ELSE 0 END) as danger_nodes,
-                SUM(CASE WHEN flood_status = 'WARNING' THEN 1 ELSE 0 END) as warning_nodes
+                COUNT(DISTINCT node_id) AS active_nodes,
+                MAX(water_level) AS highest_reading,
+                AVG(water_level) AS average_level,
+                MAX(timestamp) AS last_update,
+                SUM(CASE WHEN flood_status = 'DANGER' THEN 1 ELSE 0 END) AS danger_nodes,
+                SUM(CASE WHEN flood_status = 'WARNING' THEN 1 ELSE 0 END) AS warning_nodes
             FROM (
                 SELECT node_id, water_level, flood_status, timestamp
-                FROM water_data
-                WHERE timestamp > NOW() - INTERVAL 24 HOUR
-            ) recent_data;
+                FROM sensor_data
+                WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                ORDER BY timestamp DESC
+            ) AS recent_data;
         """)
-        result = cursor.fetchone()
-        return result
+        metrics = cursor.fetchone()
+
+        cursor.execute("""
+            SELECT COUNT(*) AS active_alerts
+            FROM flood_alerts
+            WHERE status = 'ACTIVE'
+            AND timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        """)
+        alerts = cursor.fetchone()
+
+        return {**metrics, **alerts}
+    except Exception as e:
+        current_app.logger.error(f"Error fetching dashboard metrics: {str(e)}")
+        return None
     finally:
-        if conn:
+        if conn and conn.is_connected():
             conn.close()
 
-# ======================
-# FRONTEND ROUTES
-# ======================
-
+# ===== STATIC PAGE ROUTES =====
 @bp.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-@bp.route('/about')
+@bp.route('/about.html')
 def about():
     return render_template('about.html')
 
-@bp.route('/contact')
+@bp.route('/contact.html')
 def contact():
     return render_template('contact.html')
 
-@bp.route('/navigation')
-def navigation():
-    return render_template('navigation.html')
-
-@bp.route('/data')
+@bp.route('/data.html')
 def data():
     return render_template('data.html')
 
-# ======================
-# API ROUTES for NodeMCU or JS Clients
-# ======================
+@bp.route('/navigation.html')
+def navigation():
+    return render_template('navigation.html')
 
-@bp.route('/api/water-data', methods=['POST'])
-def receive_data():
-    data = request.get_json()
-    node_id = data.get('node_id')
-    water_level = data.get('water_level')
-    flood_status = data.get('flood_status')
-    timestamp = datetime.now()
-
-    conn = get_db()
-    cursor = conn.cursor()
+# ===== API ROUTE FOR DEVICE DATA =====
+@bp.route('/api/device-data', methods=['POST'])
+def receive_device_data():
+    conn = None
     try:
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be JSON"}), 415
+
+        data = request.get_json()
+        required_fields = ['node_id', 'water_level', 'latitude', 'longitude']
+        missing = [f for f in required_fields if f not in data]
+
+        if missing:
+            return jsonify({"error": f"Missing fields: {missing}"}), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
         cursor.execute("""
-            INSERT INTO water_data (node_id, water_level, flood_status, timestamp)
-            VALUES (%s, %s, %s, %s)
-        """, (node_id, water_level, flood_status, timestamp))
+            INSERT INTO sensor_data (
+                node_id, water_level, latitude, longitude,
+                temperature, humidity, severity, flood_status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['node_id'],
+            float(data['water_level']),
+            float(data['latitude']),
+            float(data['longitude']),
+            float(data.get('temperature', 0.0)),
+            float(data.get('humidity', 0.0)),
+            data.get('severity', 'LOW'),
+            data.get('flood_status', 'NORMAL')
+        ))
         conn.commit()
-        return jsonify({'message': 'Data received successfully'}), 200
-    except Exception as e:
-        current_app.logger.error(f"Error inserting data: {e}")
-        return jsonify({'error': 'Failed to save data'}), 500
-    finally:
-        conn.close()
 
-@bp.route('/api/dashboard-metrics')
-def dashboard_metrics():
-    try:
-        metrics = get_dashboard_metrics()
-        return jsonify(metrics)
+        return jsonify({"status": "success"}), 201
     except Exception as e:
-        current_app.logger.error(f"Failed to fetch dashboard metrics: {e}")
-        return jsonify({'error': 'Unable to retrieve metrics'}), 500
+        current_app.logger.error(f"Error saving data: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
