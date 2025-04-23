@@ -147,14 +147,14 @@
           </button>
         </div>
       </div>
-      <div id="mobile-menu" class="md:hidden pb-4">
-        <a href="index.html" class="block py-2 hover:text-blue-200 transition">Home</a>
-        <a href="navigation.html" class="block py-2 hover:text-blue-200 transition">Navigation</a>
-        <a href="data.html" class="block py-2 font-medium">Data</a>
-        <a href="about.html" class="block py-2 hover:text-blue-200 transition">About</a>
-        <a href="contact.html" class="block py-2 hover:text-blue-200 transition">Contact</a>
-        <a href="login.html" class="block py-2 mt-2 bg-white text-blue-600 px-4 rounded-lg font-medium hover:bg-blue-50 transition inline-block">Login</a>
+      <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg space-y-2">
+      <a href="/" class="block px-2 py-1 rounded {% if request.path == '/' %}font-bold underline{% else %}hover:underline{% endif %}">Home</a>
+      <a href="/about" class="block px-2 py-1 rounded {% if request.path == '/about' %}font-bold underline{% else %}hover:underline{% endif %}">About Us</a>
+      <a href="/contact" class="block px-2 py-1 rounded {% if request.path == '/contact' %}font-bold underline{% else %}hover:underline{% endif %}">Contact Us</a>
+      <a href="/navigation" class="block px-2 py-1 rounded {% if request.path == '/navigation' %}font-bold underline{% else %}hover:underline{% endif %}">Navigation</a>
+      <a href="/data" class="block px-2 py-1 rounded {% if request.path == '/data' %}font-bold underline{% else %}hover:underline{% endif %}">Data</a>
       </div>
+
     </div>
   </nav>
 
