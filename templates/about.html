@@ -155,13 +155,14 @@
         </div>
     </nav>
 
-        <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg">
-        <a href="/" class="block py-1 hover:bg-blue-600 px-2 rounded">Home</a>
-        <a href="/about" class="block py-1 hover:bg-blue-600 px-2 rounded font-bold bg-blue-600">About Us</a>
-        <a href="/contact" class="block py-1 hover:bg-blue-600 px-2 rounded">Contact Us</a>
-        <a href="/navigation" class="block py-1 hover:bg-blue-600 px-2 rounded">Navigation</a>
-        <a href="/data" class="block py-1 hover:bg-blue-600 px-2 rounded">Data</a>
-    </div>
+        <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg space-y-2">
+          <a href="/" class="block px-2 py-1 rounded {% if request.path == '/' %}font-bold underline{% else %}hover:underline{% endif %}">Home</a>
+          <a href="/about" class="block px-2 py-1 rounded {% if request.path == '/about' %}font-bold underline{% else %}hover:underline{% endif %}">About Us</a>
+          <a href="/contact" class="block px-2 py-1 rounded {% if request.path == '/contact' %}font-bold underline{% else %}hover:underline{% endif %}">Contact Us</a>
+          <a href="/navigation" class="block px-2 py-1 rounded {% if request.path == '/navigation' %}font-bold underline{% else %}hover:underline{% endif %}">Navigation</a>
+          <a href="/data" class="block px-2 py-1 rounded {% if request.path == '/data' %}font-bold underline{% else %}hover:underline{% endif %}">Data</a>
+        </div>
+
 
     <!-- Enhanced header with background image -->
     <header class="relative flex flex-col items-center justify-center h-64 bg-blue-400 text-white text-center bg-cover bg-center" style="background-image: url('img/about-header.jpg');">
