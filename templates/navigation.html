@@ -26,6 +26,11 @@
         #walkMode {
             display: none;
         }
+        .transport-mode.active {
+            background-color: #3B82F6;
+            color: white;
+            border-color: #3B82F6;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -252,23 +257,23 @@
             { display_name: "Carmona-Timbao Road, Biñan, Laguna", lat: 14.31147, lon: 121.06403 },
             { display_name: "South City Drive, Biñan, Laguna", lat: 14.32477, lon: 121.07339 },
             { display_name: "Poblacion, Santa Rosa, Laguna", lat: 14.3167, lon: 121.1116 },
-            { display_name: "Pagsawitan, Santa Cruz, Laguna", lat: 14.2814, lon: 121.4167 },
-            { display_name: "Los Baños, Laguna Town Proper", lat: 14.1667, lon: 121.2167 },
-            { display_name: "Calamba City Hall, Laguna", lat: 14.2117, lon: 121.1653 },
-            { display_name: "San Pablo City Plaza, Laguna", lat: 14.0667, lon: 121.3250 },
-            { display_name: "Victoria Town Center, Laguna", lat: 14.2275, lon: 121.3292 },
-            { display_name: "Nagcarlan Municipal Hall, Laguna", lat: 14.1364, lon: 121.4167 },
-            { display_name: "Liliw Town Plaza, Laguna", lat: 14.1306, lon: 121.4361 },
-            { display_name: "Majayjay Town Proper, Laguna", lat: 14.1464, lon: 121.4722 },
-            { display_name: "Pila Town Plaza, Laguna", lat: 14.2325, lon: 121.3639 },
-            { display_name: "Sta. Maria Town Proper, Laguna", lat: 14.4722, lon: 121.4250 },
-            { display_name: "Siniloan Public Market, Laguna", lat: 14.4222, lon: 121.4464 },
-            { display_name: "Famy Town Center, Laguna", lat: 14.4361, lon: 121.4486 },
-            { display_name: "Mabitac Town Plaza, Laguna", lat: 14.4258, lon: 121.4278 },
-            { display_name: "Paete Town Proper, Laguna", lat: 14.3647, lon: 121.4828 },
-            { display_name: "Pakil Municipal Hall, Laguna", lat: 14.3806, lon: 121.4806 },
-            { display_name: "Pangil Town Plaza, Laguna", lat: 14.4036, lon: 121.4667 },
-            { display_name: "Kalayaan Town Center, Laguna", lat: 14.3250, lon: 121.4778 }
+            { display_name: "Biñan-Sta-Rosa Access Rd, Santa Rosa, Laguna", lat: 14.307920, lon: 121.091244 },
+            { display_name: "Zapote Road, Biñan, Laguna", lat: 14.317525, lon: 121.084549 },
+            { display_name: "Governor's Drive, Biñan, Laguna", lat: 14.331746, lon: 121.080429 },
+            { display_name: "Santo Tomas Rd, Biñan, Laguna", lat: 14.327749, lon: 121.078005 },
+            { display_name: "Tubigan Biñan, Biñan, Laguna", lat: 14.328895, lon: 121.077281 },
+            { display_name: "Tubigan Barangay Road, Biñan, Laguna", lat: 14.328661, lon: 121.077361 },
+            { display_name: "Dahlia St, Carmona", lat: 14.311857, lon: 121.063038 },
+            { display_name: "Washington St, Biñan, Laguna", lat: 14.310233, lon: 121.064921 },
+            { display_name: "Maharlika Hwy, Biñan, Laguna", lat: 14.336658, lon: 121.076336 },
+            { display_name: "A. Bonifacio St, Biñan, Biñan, Laguna", lat: 14.338882, lon: 121.080585 },
+            { display_name: "Pedro Hescueta St, Biñan, Laguna", lat: 14.339287, lon: 121.086540 },
+            { display_name: "San Francisco Rd, Biñan, Laguna", lat: 14.338206, lon: 121.069449 },
+            { display_name: "San Francisco Halang, Biñan, Laguna", lat: 14.328664, lon: 121.054117 },
+            { display_name: "Ecocentrum Blvd, Biñan, Laguna", lat: 14.326647, lon: 121.054686 },
+            { display_name: "M.Manabat St, Biñan, Laguna", lat: 14.332318, lon: 121.087553 },
+            { display_name: "Malvar St, Biñan, Laguna", lat: 14.333794, lon: 121.083884 },
+            { display_name: "Soro-Soro Barangay Rd, Biñan, Laguna", lat: 14.328409, lon: 121.066525 }
         ];
         
         // Configuration
@@ -321,17 +326,23 @@
             });
 
             // Transport mode buttons
+            // Replace the existing transport mode button event listener with this:
             document.querySelectorAll('.transport-mode').forEach(button => {
                 button.addEventListener('click', function() {
+                    // Remove active class from all buttons
                     document.querySelectorAll('.transport-mode').forEach(btn => {
-                        btn.classList.remove('active');
+                        btn.classList.remove('active', 'bg-blue-600', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-700');
                     });
-                    this.classList.add('active');
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active', 'bg-blue-600', 'text-white');
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    
                     transportMode = this.id.replace('Mode', '');
                     if (currentRoute) calculateSafeRoute();
                 });
             });
-
             // Smart routing priority buttons
             document.getElementById('priority-fastest').addEventListener('click', function() {
                 document.getElementById('priority-fastest').classList.add('bg-blue-600', 'text-white');
@@ -456,10 +467,10 @@
                 
                 // Mock emergency data
                 emergencyData = [
-                    { type: 'barangay_hall', name: 'Barangay Hall 1', lat: 14.31150, lng: 121.06392 },
-                    { type: 'police_station', name: 'Police Station', lat: 14.31672, lng: 121.07945 },
-                    { type: 'hospital', name: 'Laguna Medical Center', lat: 14.3025, lng: 121.0856 },
-                    { type: 'fire_station', name: 'Santa Rosa Fire Station', lat: 14.3189, lng: 121.1122 }
+                    { type: 'barangay_hall', name: 'Barangay Hall 1', lat: 14.31133, lng: 121.06400 },
+                    { type: 'police_station', name: 'Police Station', lat: 14.30622, lng: 121.07826 },
+                    { type: 'hospital', name: 'Perpetual Medical Center', lat: 14.3243, lng: 121.07440 },
+                    { type: 'fire_station', name: 'Santa Rosa Fire Station', lat: 14.31836, lng: 121.07981 }
                 ];
                 
                 console.log("Initial data loaded successfully");
@@ -520,13 +531,14 @@
             // Convert coordinates to LatLng array
             const latLngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
             
-            // Draw route
+            // Draw route with more visible styling
             L.polyline(latLngs, {
                 color: route.hasFlood ? '#EF4444' : '#3B82F6',
-                weight: 5,
-                opacity: 0.9,
+                weight: 6,  // Thicker line
+                opacity: 1,
                 lineJoin: 'round',
-                lineCap: 'round'
+                lineCap: 'round',
+                dashArray: route.hasFlood ? '10, 10' : null  // Dashed line for flood routes
             }).addTo(routeLayer);
             
             // Add start and end markers
@@ -860,35 +872,52 @@
             };
         }
 
-        async function generateMockRoutes(start, end) {
-            // Mock route generation
-            return [
-                {
-                    geometry: {
-                        coordinates: [
-                            [start.lng, start.lat],
-                            [(start.lng + end.lng)/2, (start.lat + end.lat)/2],
-                            [end.lng, end.lat]
-                        ]
-                    },
-                    distance: 5200,
-                    duration: 900,
-                    hasFlood: false
-                },
-                {
-                    geometry: {
-                        coordinates: [
-                            [start.lng, start.lat],
-                            [start.lng + 0.01, start.lat + 0.01],
-                            [end.lng, end.lat]
-                        ]
-                    },
-                    distance: 5800,
-                    duration: 950,
-                    hasFlood: true
-                }
-            ];
+       async function generateMockRoutes(start, end) {
+    // More realistic route generation with curves
+    return [
+        {
+            geometry: {
+                coordinates: [
+                    [start.lng, start.lat],
+                    [start.lng + 0.005, start.lat + 0.005],  // First curve point
+                    [start.lng + 0.01, start.lat + 0.003],
+                    [(start.lng + end.lng)/2, (start.lat + end.lat)/2],  // Midpoint
+                    [end.lng - 0.01, end.lat - 0.003],
+                    [end.lng - 0.005, end.lat - 0.005],  // Second curve point
+                    [end.lng, end.lat]
+                ]
+            },
+            distance: 5200,
+            duration: 900,
+            hasFlood: false,
+            steps: [
+                { instruction: "Head northeast on Road A", distance: 500 },
+                { instruction: "Turn right onto Street B", distance: 1200 },
+                { instruction: "Continue straight", distance: 3500 }
+            ]
+        },
+        {
+            geometry: {
+                coordinates: [
+                    [start.lng, start.lat],
+                    [start.lng + 0.008, start.lat],  // First segment
+                    [start.lng + 0.008, start.lat + 0.008],
+                    [end.lng - 0.008, end.lat + 0.008],
+                    [end.lng - 0.008, end.lat],
+                    [end.lng, end.lat]
+                ]
+            },
+            distance: 5800,
+            duration: 950,
+            hasFlood: true,
+            steps: [
+                { instruction: "Head east on Main Street", distance: 800 },
+                { instruction: "Turn left onto Flood Road", distance: 2000, warning: "Flood risk area" },
+                { instruction: "Turn right onto Avenue C", distance: 3000 }
+            ]
         }
+    ];
+}
     </script>
 </body>
 </html>
