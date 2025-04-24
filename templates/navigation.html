@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
     <style>
-        /* All your previous styles remain here */
         #floodMap { height: 500px; width: 100%; border-radius: 0.5rem; border: 1px solid #e5e7eb; }
         .risk-indicator { transition: all 0.3s ease; }
         .pulse-ring { animation: pulse 2s infinite; }
@@ -18,7 +17,12 @@
             70% { transform: scale(1.3); opacity: 0.1; }
             100% { transform: scale(0.8); opacity: 0; }
         }
-        /* Include all other styles from your original file */
+        .voice-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -137,17 +141,17 @@
                 <div>
                     <label for="startInput" class="block font-medium mb-1">Start Location</label>
                     <div class="relative">
-                        <input id="startInput" type="text" placeholder="Search place..." 
+                        <input id="startInput" type="text" placeholder="Search place in Laguna..." 
                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <div id="startSuggestions" class="absolute hidden w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"></div>
+                        <div id="startSuggestions" class="absolute hidden w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"></div>
                     </div>
                 </div>
                 <div>
                     <label for="endInput" class="block font-medium mb-1">Destination</label>
                     <div class="relative">
-                        <input id="endInput" type="text" placeholder="Search place..." 
+                        <input id="endInput" type="text" placeholder="Search place in Laguna..." 
                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <div id="endSuggestions" class="absolute hidden w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"></div>
+                        <div id="endSuggestions" class="absolute hidden w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"></div>
                     </div>
                 </div>
                 <button id="calculateRoute" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition flex items-center justify-center">
@@ -165,6 +169,27 @@
         <div id="routeOptions" class="hidden bg-white p-4 rounded-lg shadow-md mb-4">
             <h3 class="font-bold mb-2">Route Options</h3>
             <div id="routeOptionsList" class="space-y-2"></div>
+        </div>
+        
+        <!-- Voice Guidance Controls -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+            <h3 class="font-bold mb-2 flex items-center">
+                <i class="fas fa-volume-up mr-2 text-blue-500"></i> Voice Guidance
+            </h3>
+            <div class="flex items-center space-x-4">
+                <button id="toggleVoiceGuidance" class="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center">
+                    <i class="fas fa-play mr-2"></i> Start Navigation
+                </button>
+                <div class="flex items-center">
+                    <label for="voiceVolume" class="mr-2 text-sm">Volume:</label>
+                    <input type="range" id="voiceVolume" min="0" max="1" step="0.1" value="0.7" class="w-24">
+                </div>
+                <div class="flex items-center">
+                    <label for="voiceRate" class="mr-2 text-sm">Speed:</label>
+                    <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1" class="w-24">
+                </div>
+            </div>
+            <div id="voiceStatus" class="mt-2 text-sm text-gray-600">Voice guidance is ready</div>
         </div>
     </main>
 
@@ -217,6 +242,31 @@
         let selectedRouteIndex = 0;
         let currentRoute = null;
         let voiceGuidance = false;
+        let voiceActive = false;
+        let speechSynthesis = window.speechSynthesis;
+        let speechUtterance = new SpeechSynthesisUtterance();
+        let lagunaLocations = [
+            { display_name: "Carmona-Timbao Road, Biñan, Laguna", lat: 14.31147, lon: 121.06403 },
+            { display_name: "South City Drive, Biñan, Laguna", lat: 14.32477, lon: 121.07339 },
+            { display_name: "Poblacion, Santa Rosa, Laguna", lat: 14.3167, lon: 121.1116 },
+            { display_name: "Pagsawitan, Santa Cruz, Laguna", lat: 14.2814, lon: 121.4167 },
+            { display_name: "Los Baños, Laguna Town Proper", lat: 14.1667, lon: 121.2167 },
+            { display_name: "Calamba City Hall, Laguna", lat: 14.2117, lon: 121.1653 },
+            { display_name: "San Pablo City Plaza, Laguna", lat: 14.0667, lon: 121.3250 },
+            { display_name: "Victoria Town Center, Laguna", lat: 14.2275, lon: 121.3292 },
+            { display_name: "Nagcarlan Municipal Hall, Laguna", lat: 14.1364, lon: 121.4167 },
+            { display_name: "Liliw Town Plaza, Laguna", lat: 14.1306, lon: 121.4361 },
+            { display_name: "Majayjay Town Proper, Laguna", lat: 14.1464, lon: 121.4722 },
+            { display_name: "Pila Town Plaza, Laguna", lat: 14.2325, lon: 121.3639 },
+            { display_name: "Sta. Maria Town Proper, Laguna", lat: 14.4722, lon: 121.4250 },
+            { display_name: "Siniloan Public Market, Laguna", lat: 14.4222, lon: 121.4464 },
+            { display_name: "Famy Town Center, Laguna", lat: 14.4361, lon: 121.4486 },
+            { display_name: "Mabitac Town Plaza, Laguna", lat: 14.4258, lon: 121.4278 },
+            { display_name: "Paete Town Proper, Laguna", lat: 14.3647, lon: 121.4828 },
+            { display_name: "Pakil Municipal Hall, Laguna", lat: 14.3806, lon: 121.4806 },
+            { display_name: "Pangil Town Plaza, Laguna", lat: 14.4036, lon: 121.4667 },
+            { display_name: "Kalayaan Town Center, Laguna", lat: 14.3250, lon: 121.4778 }
+        ];
         
         // Configuration
         const RISK_LEVELS = {
@@ -238,11 +288,12 @@
             setupEventListeners();
             loadInitialData();
             checkFloodAlerts();
+            setupVoiceControls();
         });
 
         function initMap() {
             try {
-                map = L.map('floodMap').setView([14.3036, 121.0781], 13);
+                map = L.map('floodMap').setView([14.1667, 121.2167], 11); // Centered on Laguna
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -278,6 +329,37 @@
                 });
             });
 
+            // Smart routing priority buttons
+            document.getElementById('priority-fastest').addEventListener('click', function() {
+                document.getElementById('priority-fastest').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('priority-fastest').classList.remove('bg-gray-200', 'text-gray-700');
+                document.getElementById('priority-safest').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('priority-safest').classList.add('bg-gray-200', 'text-gray-700');
+                document.getElementById('priority-balanced').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('priority-balanced').classList.add('bg-gray-200', 'text-gray-700');
+                if (currentRoute) calculateSafeRoute();
+            });
+
+            document.getElementById('priority-safest').addEventListener('click', function() {
+                document.getElementById('priority-safest').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('priority-safest').classList.remove('bg-gray-200', 'text-gray-700');
+                document.getElementById('priority-fastest').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('priority-fastest').classList.add('bg-gray-200', 'text-gray-700');
+                document.getElementById('priority-balanced').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('priority-balanced').classList.add('bg-gray-200', 'text-gray-700');
+                if (currentRoute) calculateSafeRoute();
+            });
+
+            document.getElementById('priority-balanced').addEventListener('click', function() {
+                document.getElementById('priority-balanced').classList.add('bg-blue-600', 'text-white');
+                document.getElementById('priority-balanced').classList.remove('bg-gray-200', 'text-gray-700');
+                document.getElementById('priority-fastest').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('priority-fastest').classList.add('bg-gray-200', 'text-gray-700');
+                document.getElementById('priority-safest').classList.remove('bg-blue-600', 'text-white');
+                document.getElementById('priority-safest').classList.add('bg-gray-200', 'text-gray-700');
+                if (currentRoute) calculateSafeRoute();
+            });
+
             // Calculate route button
             document.getElementById('calculateRoute').addEventListener('click', calculateSafeRoute);
 
@@ -290,6 +372,73 @@
             // Input autocomplete
             setupAutocomplete('startInput', 'startSuggestions');
             setupAutocomplete('endInput', 'endSuggestions');
+        }
+
+        function setupVoiceControls() {
+            // Set default voice settings
+            speechUtterance.volume = document.getElementById('voiceVolume').value;
+            speechUtterance.rate = document.getElementById('voiceRate').value;
+            
+            // Voice volume control
+            document.getElementById('voiceVolume').addEventListener('input', function() {
+                speechUtterance.volume = this.value;
+            });
+            
+            // Voice rate control
+            document.getElementById('voiceRate').addEventListener('input', function() {
+                speechUtterance.rate = this.value;
+            });
+            
+            // Toggle voice guidance
+            document.getElementById('toggleVoiceGuidance').addEventListener('click', function() {
+                if (voiceActive) {
+                    stopVoiceGuidance();
+                } else {
+                    startVoiceGuidance();
+                }
+            });
+        }
+
+        function startVoiceGuidance() {
+            if (!currentRoute) {
+                showNotification("Please calculate a route first", "error");
+                return;
+            }
+            
+            voiceActive = true;
+            document.getElementById('toggleVoiceGuidance').innerHTML = '<i class="fas fa-stop mr-2"></i> Stop Navigation';
+            document.getElementById('voiceStatus').textContent = "Voice guidance is active";
+            
+            // Initial announcement
+            speak(`Navigation started. Your route from ${document.getElementById('startInput').value} to ${document.getElementById('endInput').value} is ${(currentRoute.distance / 1000).toFixed(1)} kilometers long and will take approximately ${formatDuration(currentRoute.duration)}.`);
+            
+            // Simulate turn-by-turn guidance (in a real app, this would be based on actual route steps)
+            setTimeout(() => {
+                if (voiceActive) speak("In 500 meters, turn right onto Carmona-Timbao Road.");
+            }, 5000);
+            
+            setTimeout(() => {
+                if (voiceActive) speak("Warning: Flood risk detected ahead on South City Drive. Alternative route suggested.");
+            }, 10000);
+            
+            setTimeout(() => {
+                if (voiceActive) speak("You have arrived at your destination.");
+            }, 15000);
+        }
+
+        function stopVoiceGuidance() {
+            voiceActive = false;
+            speechSynthesis.cancel();
+            document.getElementById('toggleVoiceGuidance').innerHTML = '<i class="fas fa-play mr-2"></i> Start Navigation';
+            document.getElementById('voiceStatus').textContent = "Voice guidance is ready";
+        }
+
+        function speak(text) {
+            if (!voiceActive) return;
+            
+            speechSynthesis.cancel();
+            speechUtterance.text = text;
+            speechSynthesis.speak(speechUtterance);
         }
 
         async function loadInitialData() {
@@ -305,7 +454,9 @@
                 // Mock emergency data
                 emergencyData = [
                     { type: 'barangay_hall', name: 'Barangay Hall 1', lat: 14.31150, lng: 121.06392 },
-                    { type: 'police_station', name: 'Police Station', lat: 14.31672, lng: 121.07945 }
+                    { type: 'police_station', name: 'Police Station', lat: 14.31672, lng: 121.07945 },
+                    { type: 'hospital', name: 'Laguna Medical Center', lat: 14.3025, lng: 121.0856 },
+                    { type: 'fire_station', name: 'Santa Rosa Fire Station', lat: 14.3189, lng: 121.1122 }
                 ];
                 
                 console.log("Initial data loaded successfully");
@@ -432,6 +583,9 @@
                     currentRoute = alternativeRoutes[index];
                     displayRoute(currentRoute);
                     displayRouteOptions(); // Refresh to highlight selected
+                    if (voiceActive) {
+                        speak(`Route ${index + 1} selected. ${route.hasFlood ? 'Warning: This route has flood risks.' : 'This is a safe route.'}`);
+                    }
                 });
                 
                 container.appendChild(option);
@@ -614,16 +768,14 @@
                 }
                 
                 try {
-                    // Mock suggestions - replace with actual API call
-                    const mockSuggestions = [
-                        { display_name: "Carmona-Timbao Road, Biñan", lat: 14.31147, lon: 121.06403 },
-                        { display_name: "South City Drive, Biñan", lat: 14.32477, lon: 121.07339 }
-                    ].filter(item => item.display_name.toLowerCase().includes(query.toLowerCase()));
+                    // Filter Laguna locations
+                    const filtered = lagunaLocations.filter(item => 
+                        item.display_name.toLowerCase().includes(query.toLowerCase()));
                     
                     suggestions.innerHTML = '';
                     
-                    if (mockSuggestions.length > 0) {
-                        mockSuggestions.forEach(item => {
+                    if (filtered.length > 0) {
+                        filtered.forEach(item => {
                             const div = document.createElement('div');
                             div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
                             div.textContent = item.display_name;
@@ -688,10 +840,21 @@
 
         // Mock data generators (replace with real API calls)
         async function mockGeocode(address) {
-            // Mock implementation
-            if (address.includes("Carmona")) return { lat: 14.31147, lng: 121.06403 };
-            if (address.includes("South City")) return { lat: 14.32477, lng: 121.07339 };
-            return { lat: 14.3036 + (Math.random() * 0.02 - 0.01), lng: 121.0781 + (Math.random() * 0.02 - 0.01) };
+            // First check if it matches any Laguna location exactly
+            const exactMatch = lagunaLocations.find(loc => 
+                loc.display_name.toLowerCase() === address.toLowerCase());
+            if (exactMatch) return { lat: exactMatch.lat, lng: exactMatch.lon };
+            
+            // Then check for partial matches in Laguna locations
+            const partialMatch = lagunaLocations.find(loc => 
+                loc.display_name.toLowerCase().includes(address.toLowerCase()));
+            if (partialMatch) return { lat: partialMatch.lat, lng: partialMatch.lon };
+            
+            // Default to random location in Laguna area
+            return { 
+                lat: 14.1667 + (Math.random() * 0.5 - 0.25), 
+                lng: 121.2167 + (Math.random() * 0.5 - 0.25) 
+            };
         }
 
         async function generateMockRoutes(start, end) {
