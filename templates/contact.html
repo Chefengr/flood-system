@@ -1,16 +1,26 @@
-{% extends "base.html" %}
-
-{% block title %}Contact Us - Flood Detection & Route Optimization{% endblock %}
-
-{% block styles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Flood Detection & Route Optimization</title>
+    <link rel="stylesheet" href="style/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Added Font Awesome for better icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="scripts/script.js" defer></script>
     <style>
+        #mobile-menu {
+            display: none;
+        }
+    
         .form-container {
             max-width: 450px;
             margin: 0 auto;
         }
     
         .bg-flood-pattern {
-            background-image: url('{{ url_for("static", filename="img/flood-pattern.png") }}');
+            background-image: url('img/flood-pattern.png');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -23,7 +33,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(246, 59, 131, 0.679);
+            background-color: rgba(246, 59, 131, 0.679); /* Flood overlay */
             z-index: 0;
         }
     
@@ -49,12 +59,103 @@
         .animate-fade-out {
             animation: fadeOut 0.5s ease-in-out;
         }
+    
+        /* Chatbot styles */
+        #chat-button {
+            background: linear-gradient(135deg, #00bcd4, #2196f3, #f63b83); /* Water to alert tones */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    
+        #chat-button:hover {
+            transform: scale(1.05);
+        }
+    
+        #chat-container {
+            background: linear-gradient(to bottom right, #e0f7fa, #b2ebf2, #81d4fa); /* Light blue flood theme */
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 400px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+        }
+    
+        #chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+    
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+    
+        #chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+    
+        #chat-messages::-webkit-scrollbar-thumb {
+            background-color: #90caf9;
+            border-radius: 3px;
+        }
+    
+        .chat-message {
+            background-color: #ffffffcc;
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin: 8px 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+    
+        .chat-message.user {
+            background-color: #d1c4e9;
+            align-self: flex-end;
+        }
+    
+        .chat-message.bot {
+            background-color: #e1f5fe;
+            align-self: flex-start;
+        }
     </style>
-{% endblock %}
+    
+</head>
+<body class="bg-gray-100">
+    <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
+        <img class="w-32 cursor-pointer" src="../img/logo.png" alt="Logo">
+    <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg space-y-2">
+      <a href="index.html" class="block px-2 py-1 hover:underline">Home</a>
+      <a href="about.html" class="block px-2 py-1 hover:underline">About</a>
+      <a href="contact.html" class="block px-2 py-1 hover:underline">Contact</a>
+      <a href="navigation.html" class="block px-2 py-1 hover:underline">Navigation</a>
+      <a href="data.html" class="block px-2 py-1 hover:underline">Data</a>
+    </div>
 
-{% block content %}
+        <div class="md:hidden">
+            <button onclick="onToggleMenu()" class="text-2xl" aria-label="Toggle menu">&#9776;</button>
+        </div>
+    </nav>
+
+        <div id="menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg space-y-2">
+          <a href="index.html" class="block px-2 py-1 hover:underline">Home</a>
+          <a href="about.html" class="block px-2 py-1 hover:underline">About</a>
+          <a href="contact.html" class="block px-2 py-1 hover:underline">Contact</a>
+          <a href="navigation.html" class="block px-2 py-1 hover:underline">Navigation</a>
+          <a href="data.html" class="block px-2 py-1 hover:underline">Data</a>
+        </div>
+
+
+
     <!-- Enhanced header with background image -->
-    <header class="relative flex flex-col items-center justify-center h-64 bg-blue-400 text-white text-center bg-cover bg-center" style="background-image: url('{{ url_for("static", filename="img/contact-header.jpg") }}');">
+    <header class="relative flex flex-col items-center justify-center h-64 bg-blue-400 text-white text-center bg-cover bg-center" style="background-image: url('img/contact-header.jpg');">
         <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
         <div class="relative z-10">
             <h1 class="text-4xl font-bold">Contact Us</h1>
@@ -211,10 +312,57 @@
             </div>
         </section>
     </main>
-{% endblock %}
 
-{% block scripts %}
+    <!-- Same footer as about.html -->
+    <footer class="bg-blue-600 text-white py-4">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- About Us Section -->
+                <div>
+                    <h3 class="text-base font-bold mb-2">About Us</h3>
+                    <p class="text-blue-100 text-xs">
+                        We provide real-time flood detection and route optimization to ensure safer travel during extreme weather conditions.
+                    </p>
+                </div>
+    
+                <!-- Quick Links Section -->
+                <div>
+                    <h3 class="text-base font-bold mb-2">Quick Links</h3>
+                    <ul class="space-y-0.5 text-xs text-blue-100">
+                        <li><a href="index.html" class="hover:underline">Home</a></li>
+                        <li><a href="about.html" class="hover:underline">About Us</a></li>
+                        <li><a href="navigation.html" class="hover:underline">Navigation</a></li>
+                        <li><a href="flood-data.html" class="hover:underline">Flood Data</a></li>
+                    </ul>
+                </div>
+    
+                <!-- Connect With Us Section -->
+                <div class="flex flex-col items-start">
+                    <h3 class="text-base font-bold mb-2">Connect With Us</h3>
+                    <div class="flex space-x-3 text-lg">
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Footer Bottom -->
+            <div class="mt-4 text-center text-xs text-blue-100">
+                © 2025 FloodSafe Navigation. All rights reserved.
+            </div>
+        </div>
+    </footer>
+    
+
     <script>
+        // Toggle mobile menu
+        function onToggleMenu() {
+            const menu = document.getElementById('menu');
+            menu.classList.toggle('hidden');
+        }
+
         // Handle contact form submission
         document.getElementById('contactForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -251,4 +399,7 @@
             }, 1500);
         });
     </script>
-{% endblock %}
+     <!-- Add chatbot script -->
+  <script src="script/chatbot.js"></script>
+</body>
+</html>
