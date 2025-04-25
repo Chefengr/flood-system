@@ -685,126 +685,95 @@
         }
 
         // Display functions
-       function displayRoute(route) {
-            routeLayer.clearLayers();
-            
-            if (!route.geometry?.coordinates) return;
-            
-            // Convert coordinates
-            const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
-            
-            // Enhanced main route
-            const routeLine = L.polyline(latLngs, {
-                color: '#3366FF',
-                weight: 7,
-                opacity: 1,
-                className: 'route-line'
-            }).addTo(routeLayer);
-            
-            // Process steps
-            if (route.steps) {
-                route.steps.forEach(step => {
-                    // TURN INDICATORS
-                    if (step.maneuver && !['depart','arrive','continue'].includes(step.maneuver.type)) {
-                        const turnPoint = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
-                        L.circleMarker(turnPoint, {
-                            radius: 8,
-                            color: '#FFD700',
-                            fillColor: '#FFD700',
-                            fillOpacity: 1
-                        }).addTo(routeLayer)
-                        .bindPopup(`${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")}`);
-                    }
-                    
-                    // FLOOD WARNINGS (existing)
-                    if (step.hasFloodWarning && step.geometry?.coordinates) {
-                        const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
-                        L.polyline(stepLatLngs, {
-                            color: '#EF4444',
-                            weight: 8,
-                            dashArray: '10, 5'
-                        }).addTo(routeLayer);
-                    }
-                });
-            }
-            
-            // Direction arrows (existing)
-            L.polylineDecorator(routeLine, {
-                patterns: [{
-                    offset: 25,
-                    repeat: 50,
-                    symbol: L.Symbol.arrowHead({
-                        pixelSize: 12,
-                        pathOptions: { 
-                            color: '#FFFFFF',
-                            fillOpacity: 1 
-                        }
-                    })
-                }]
-            }).addTo(routeLayer);
-            
-            // Start/end markers (existing)
-            addRouteMarkers(latLngs);
-            
-            // Update UI (existing)
-            updateRouteStats(route);
-            
-            // Auto-navigation simulation
-            simulateNavigation(latLngs);
+      function displayRoute(route) {
+        routeLayer.clearLayers();
+        
+        if (!route.geometry?.coordinates) {
+            console.error("No route coordinates found:", route);
+            return;
         }
         
-        // Helper functions
-        function addRouteMarkers(latLngs) {
-            if (!latLngs.length) return;
-            
-            // Start marker
-            L.marker(latLngs[0], {
-                icon: L.divIcon({
-                    className: 'start-marker',
-                    html: '<div class="text-white bg-blue-600 rounded-full p-2"><i class="fas fa-map-marker-alt"></i></div>',
-                    iconSize: [30, 30]
-                })
-            }).addTo(routeLayer);
-            
-            // End marker
-            L.marker(latLngs[latLngs.length - 1], {
-                icon: L.divIcon({
-                    className: 'end-marker',
-                    html: '<div class="text-white bg-red-600 rounded-full p-2"><i class="fas fa-flag-checkered"></i></div>',
-                    iconSize: [30, 30]
-                })
-            }).addTo(routeLayer);
-        }
+        console.log("Displaying route with coordinates:", route.geometry.coordinates.length);
         
-        function simulateNavigation(positions) {
-            let counter = 0;
-            const interval = setInterval(() => {
-                if (counter >= positions.length) {
-                    clearInterval(interval);
-                    return;
+        // Convert coordinates
+        const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+        
+        // Enhanced main route
+        const routeLine = L.polyline(latLngs, {
+            color: '#3366FF',
+            weight: 7,
+            opacity: 1,
+            className: 'route-line'
+        }).addTo(routeLayer);
+        
+        // Process steps
+        if (route.steps) {
+            route.steps.forEach(step => {
+                // TURN INDICATORS
+                if (step.maneuver && !['depart','arrive','continue'].includes(step.maneuver.type)) {
+                    const turnPoint = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
+                    L.circleMarker(turnPoint, {
+                        radius: 8,
+                        color: '#FFD700',
+                        fillColor: '#FFD700',
+                        fillOpacity: 1
+                    }).addTo(routeLayer)
+                    .bindPopup(`${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")}`);
                 }
                 
-                // Update car position
-                routeLayer.getLayers().forEach(layer => {
-                    if (layer.options?.className === 'car-marker') {
-                        routeLayer.removeLayer(layer);
-                    }
-                });
-                
-                L.marker(positions[counter], {
-                    icon: L.divIcon({
-                        className: 'car-marker pulse-marker',
-                        html: '<div class="bg-blue-600 rounded-full p-2"><i class="fas fa-car text-white"></i></div>',
-                        iconSize: [30, 30]
-                    })
-                }).addTo(routeLayer);
-                
-                // Center map on current position
-                map.setView(positions[counter], map.getZoom());
-                
-                counter += 5; // Move 5 positions each update
-            }, 500); // Update every 0.5 seconds
+                // FLOOD WARNINGS (existing)
+                if (step.hasFloodWarning && step.geometry?.coordinates) {
+                    const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+                    L.polyline(stepLatLngs, {
+                        color: '#EF4444',
+                        weight: 8,
+                        dashArray: '10, 5'
+                    }).addTo(routeLayer);
+                }
+            });
         }
+        
+        // Direction arrows (existing)
+        L.polylineDecorator(routeLine, {
+            patterns: [{
+                offset: 25,
+                repeat: 50,
+                symbol: L.Symbol.arrowHead({
+                    pixelSize: 12,
+                    pathOptions: { 
+                        color: '#FFFFFF',
+                        fillOpacity: 1 
+                    }
+                })
+            }]
+        }).addTo(routeLayer);
+        
+        // Start/end markers (existing)
+        addRouteMarkers(latLngs);
+        
+        // Update UI (existing)
+        updateRouteStats(route);
+        
+        // Make sure the route is visible on the map
+        try {
+            // Fit map to route bounds with padding
+            const bounds = routeLine.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, {
+                    padding: [50, 50],
+                    maxZoom: 15
+                });
+                console.log("Map fitted to route bounds");
+            } else {
+                console.warn("Route bounds invalid, using start/end points");
+                // Fallback: zoom to include start and end points
+                if (latLngs.length >= 2) {
+                    const startEndBounds = L.latLngBounds([latLngs[0], latLngs[latLngs.length - 1]]);
+                    map.fitBounds(startEndBounds, {
+                        padding: [100, 100],
+                        maxZoom: 15
+                    });
+                
         function displayRouteOptions() {
             const container = document.getElementById('routeOptionsList');
             if (!container) return;
