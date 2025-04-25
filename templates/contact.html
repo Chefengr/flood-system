@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us - Flood Detection & Route Optimization</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/styles.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="{{ url_for('static', filename='script/script.js') }}" defer></script>
@@ -130,7 +130,7 @@
     <!-- Navigation Bar -->
     <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
         <a href="{{ url_for('routes.index') }}">
-            <img class="w-32 cursor-pointer" src="{{ url_for('static', filename='img/logo.png') }}" alt="Flood Detection & Route Optimization Logo">
+            <img class="w-32 h-32 object-cover cursor-pointer rounded-full" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
         </a>
         <div class="hidden md:flex space-x-6">
             <a href="{{ url_for('routes.index') }}" class="hover:underline">Home</a>
