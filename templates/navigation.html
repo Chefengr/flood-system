@@ -878,72 +878,43 @@
         }
 
         // Mock data generators (replace with real API calls)
-        async function mockGeocode(address) {
-            // First check if it matches any Laguna location exactly
+       async function mockGeocode(address) {
+            // First check exact matches
             const exactMatch = lagunaLocations.find(loc => 
                 loc.display_name.toLowerCase() === address.toLowerCase());
             if (exactMatch) return { lat: exactMatch.lat, lng: exactMatch.lon };
             
-            // Then check for partial matches in Laguna locations
+            // Then partial matches
             const partialMatch = lagunaLocations.find(loc => 
                 loc.display_name.toLowerCase().includes(address.toLowerCase()));
             if (partialMatch) return { lat: partialMatch.lat, lng: partialMatch.lon };
             
-            // Default to random location in Laguna area
+            // Default to random location within Biñan bounds
             return { 
-                lat: 14.1667 + (Math.random() * 0.5 - 0.25), 
-                lng: 121.2167 + (Math.random() * 0.5 - 0.25) 
+                lat: BINAN_BOUNDS.minLat + (Math.random() * (BINAN_BOUNDS.maxLat - BINAN_BOUNDS.minLat)),
+                lng: BINAN_BOUNDS.minLng + (Math.random() * (BINAN_BOUNDS.maxLng - BINAN_BOUNDS.minLng))
             };
         }
-
        async function generateMockRoutes(start, end) {
-            // Biñan-specific coordinates for more realistic routes
-            const binanLandmarks = [
-                {lat: 14.31147, lng: 121.06403, name: "Carmona-Timbao Road"},
-                {lat: 14.32477, lng: 121.07339, name: "South City Drive"},
-                {lat: 14.31672, lng: 121.07945, name: "Biñan City Hall"},
-                {lat: 14.32513, lng: 121.07537, name: "Southwoods City"}
-            ];
+            // Ensure both points are within Biñan
+            if (!isWithinBinan(start) start = constrainToBinan(start);
+            if (!isWithinBinan(end)) end = constrainToBinan(end);
         
-            // Generate routes that pass through actual Biñan landmarks
-            return [
-                {
-                    geometry: {
-                        coordinates: [
-                            [start.lng, start.lat],
-                            [binanLandmarks[0].lng, binanLandmarks[0].lat],
-                            [binanLandmarks[1].lng, binanLandmarks[1].lat],
-                            [end.lng, end.lat]
-                        ]
-                    },
-                    distance: Math.floor(500 + Math.random() * 2000), // Random distance between 500m-2.5km
-                    duration: Math.floor(300 + Math.random() * 600), // Random duration 5-15 mins
-                    hasFlood: false,
-                    steps: [
-                        { instruction: "Head northeast on Carmona-Timbao Road", distance: 500 },
-                        { instruction: "Turn right onto South City Drive", distance: 1200 },
-                        { instruction: "Continue to destination", distance: 800 }
-                    ]
-                },
-                {
-                    geometry: {
-                        coordinates: [
-                            [start.lng, start.lat],
-                            [binanLandmarks[3].lng, binanLandmarks[3].lat],
-                            [binanLandmarks[2].lng, binanLandmarks[2].lat],
-                            [end.lng, end.lat]
-                        ]
-                    },
-                    distance: Math.floor(1000 + Math.random() * 2500),
-                    duration: Math.floor(400 + Math.random() * 800),
-                    hasFlood: true,
-                    steps: [
-                        { instruction: "Head west toward Southwoods City", distance: 800 },
-                        { instruction: "Caution: Flood-prone area ahead", distance: 1500, warning: true },
-                        { instruction: "Turn left near City Hall", distance: 1200 }
-                    ]
-                }
-            ];
+            // Rest of your route generation code...
+        }
+        
+        function isWithinBinan(point) {
+            return point.lat >= BINAN_BOUNDS.minLat && 
+                   point.lat <= BINAN_BOUNDS.maxLat &&
+                   point.lng >= BINAN_BOUNDS.minLng &&
+                   point.lng <= BINAN_BOUNDS.maxLng;
+        }
+        
+        function constrainToBinan(point) {
+            return {
+                lat: Math.max(BINAN_BOUNDS.minLat, Math.min(BINAN_BOUNDS.maxLat, point.lat)),
+                lng: Math.max(BINAN_BOUNDS.minLng, Math.min(BINAN_BOUNDS.maxLng, point.lng))
+            };
         }
     </script>
 </body>
