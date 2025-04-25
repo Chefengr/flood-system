@@ -35,6 +35,9 @@
         .route-line {
             filter: drop-shadow(0 0 5px rgba(51, 102, 255, 0.7));
         }
+        .moving-car {
+            transition: transform 1s linear;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -106,21 +109,21 @@
             <div id="ml-route-stats" class="grid grid-cols-3 gap-4 mb-4">
                 <div class="text-center p-2 bg-gray-50 rounded">
                     <div class="text-sm text-gray-600">Estimated Time</div>
-                    <div id="ml-route-time" class="font-bold">24 min</div>
+                    <div id="ml-route-time" class="font-bold">-- min</div>
                 </div>
                 <div class="text-center p-2 bg-gray-50 rounded">
                     <div class="text-sm text-gray-600">Distance</div>
-                    <div id="ml-route-distance" class="font-bold">5.2 km</div>
+                    <div id="ml-route-distance" class="font-bold">-- km</div>
                 </div>
                 <div class="text-center p-2 bg-gray-50 rounded">
                     <div class="text-sm text-gray-600">Safety Score</div>
-                    <div id="ml-route-safety" class="font-bold text-yellow-600">7/10</div>
+                    <div id="ml-route-safety" class="font-bold text-yellow-600">--/10</div>
                 </div>
             </div>
             
             <div class="text-sm text-gray-600">
                 <span class="font-medium">AI Insight:</span>
-                <span id="ml-route-insight">This route avoids 3 flood-prone areas and 1 road with heavy traffic. Alternative routes available.</span>
+                <span id="ml-route-insight">Calculate a route to see flood-safe recommendations.</span>
             </div>
         </div>
         
@@ -144,6 +147,9 @@
             </button>
             <button id="showEmergency" class="bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition flex items-center">
                 <i class="fas fa-exclamation-triangle mr-2"></i> Emergency Services
+            </button>
+            <button id="simulateRoute" class="bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition flex items-center">
+                <i class="fas fa-play mr-2"></i> Simulate Route
             </button>
         </div>
 
@@ -249,6 +255,7 @@
         let floodLayer = L.layerGroup();
         let emergencyLayer = L.layerGroup();
         let currentLocationMarker;
+        let carMarker;
         let transportMode = 'drive';
         let alternativeRoutes = [];
         let selectedRouteIndex = 0;
@@ -258,6 +265,7 @@
         let speechSynthesis = window.speechSynthesis;
         let speechUtterance = new SpeechSynthesisUtterance();
         let emergencyData = [];
+        let simulationInterval;
         let lagunaLocations = [
             { display_name: "Carmona-Timbao Road, Biñan, Laguna", lat: 14.31147, lon: 121.06403 },
             { display_name: "South City Drive, Biñan, Laguna", lat: 14.32477, lon: 121.07339 },
@@ -304,8 +312,8 @@
             maxLng: 121.11
         };
 
-        // OSRM API endpoint (using public OSRM demo server)
-        const OSRM_API = 'https://router.project-osrm.org/route/v1';
+        // OpenRouteService API key (replace with your own)
+        const ORS_API_KEY = '5b3ce3597851110001cf6248e0d5a8a9e7e84a0b9b8b5e5f8e5b5e5';
 
         // Main initialization
         document.addEventListener('DOMContentLoaded', function() {
@@ -410,6 +418,9 @@
 
             // Emergency services button
             document.getElementById('showEmergency').addEventListener('click', toggleEmergencyServices);
+
+            // Simulate route button
+            document.getElementById('simulateRoute').addEventListener('click', simulateRoute);
 
             // Input autocomplete
             setupAutocomplete('startInput', 'startSuggestions');
@@ -579,8 +590,8 @@
                     throw new Error("Could not find locations");
                 }
                 
-                // Calculate route using OSRM
-                alternativeRoutes = await calculateOSRMRoutes(startCoords, endCoords);
+                // Calculate route using OpenRouteService
+                alternativeRoutes = await calculateORSRoutes(startCoords, endCoords);
                 
                 if (alternativeRoutes.length === 0) {
                     throw new Error("No routes found");
@@ -601,35 +612,39 @@
             }
         }
 
-        // OSRM Route Calculation
-        async function calculateOSRMRoutes(start, end) {
+        // OpenRouteService Route Calculation
+        async function calculateORSRoutes(start, end) {
             try {
                 // Determine profile based on transport mode
                 let profile;
                 switch (transportMode) {
-                    case 'walk': profile = 'foot'; break;
-                    case 'motorcycle': profile = 'bike'; break; // Using bike as proxy for motorcycle
-                    default: profile = 'car';
+                    case 'walk': profile = 'foot-walking'; break;
+                    case 'motorcycle': profile = 'cycling-regular'; break;
+                    default: profile = 'driving-car';
                 }
         
-                // Build OSRM API URL
-                const url = `${OSRM_API}/${profile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&alternatives=true&steps=true`;
-        
-                const response = await fetch(url);
+                const url = `https://api.openrouteservice.org/v2/directions/${profile}?api_key=${5b3ce3597851110001cf62481e1edffe212a48e5a88bfdca8a4447bd}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                    }
+                });
+                
                 if (!response.ok) {
-                    throw new Error(`OSRM API error: ${response.status}`);
+                    throw new Error(`ORS API error: ${response.status}`);
                 }
         
                 const data = await response.json();
         
-                if (data.code !== 'Ok') {
-                    throw new Error(`OSRM error: ${data.message}`);
+                if (!data.features || data.features.length === 0) {
+                    throw new Error("No routes found");
                 }
         
                 // Process routes
-                const routes = data.routes.map((route, index) => {
-                    // Check flood intersections for each step
-                    const stepsWithWarnings = route.legs[0].steps.map(step => {
+                const routes = data.features.map((feature, index) => {
+                    const steps = feature.properties.segments[0].steps.map(step => {
                         return {
                             ...step,
                             hasFloodWarning: checkFloodIntersectionForStep(step)
@@ -638,18 +653,18 @@
         
                     return {
                         id: index,
-                        distance: route.distance,
-                        duration: route.duration,
-                        geometry: route.geometry,
-                        steps: stepsWithWarnings,
-                        hasFlood: stepsWithWarnings.some(step => step.hasFloodWarning),
-                        safetyScore: calculateSafetyScore(stepsWithWarnings)
+                        distance: feature.properties.segments[0].distance,
+                        duration: feature.properties.segments[0].duration,
+                        geometry: feature.geometry,
+                        steps: steps,
+                        hasFlood: steps.some(step => step.hasFloodWarning),
+                        safetyScore: calculateSafetyScore(steps)
                     };
                 });
         
                 return routes;
             } catch (error) {
-                console.error("OSRM routing error:", error);
+                console.error("OpenRouteService routing error:", error);
                 throw error;
             }
         }
@@ -723,9 +738,13 @@
                         .bindPopup(`${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")}`);
                     }
                     
-                    // FLOOD WARNINGS (existing)
-                    if (step.hasFloodWarning && step.geometry?.coordinates) {
-                        const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+                    // FLOOD WARNINGS
+                    if (step.hasFloodWarning && step.way_points) {
+                        const startIdx = step.way_points[0];
+                        const endIdx = step.way_points[1];
+                        const stepCoords = route.geometry.coordinates.slice(startIdx, endIdx);
+                        const stepLatLngs = stepCoords.map(coord => L.latLng(coord[1], coord[0]));
+                        
                         L.polyline(stepLatLngs, {
                             color: '#EF4444',
                             weight: 8,
@@ -735,7 +754,7 @@
                 });
             }
             
-            // Direction arrows (existing)
+            // Direction arrows
             L.polylineDecorator(routeLine, {
                 patterns: [{
                     offset: 25,
@@ -1035,6 +1054,59 @@
             } catch (error) {
                 console.error("Error checking flood alerts:", error);
             }
+        }
+
+        // Route simulation
+        function simulateRoute() {
+            if (!currentRoute) {
+                showNotification("Please calculate a route first", "error");
+                return;
+            }
+            
+            // Clear any existing simulation
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+            }
+            if (carMarker) {
+                routeLayer.removeLayer(carMarker);
+            }
+            
+            const routePoints = currentRoute.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+            let currentIndex = 0;
+            
+            // Create car marker
+            carMarker = L.marker(routePoints[0], {
+                icon: L.divIcon({
+                    className: 'moving-car',
+                    html: '<i class="fas fa-car text-blue-600 text-2xl"></i>',
+                    iconSize: [30, 30]
+                }),
+                zIndexOffset: 1000
+            }).addTo(routeLayer);
+            
+            // Animate the car along the route
+            simulationInterval = setInterval(() => {
+                currentIndex++;
+                
+                if (currentIndex >= routePoints.length) {
+                    clearInterval(simulationInterval);
+                    carMarker.bindPopup("Destination reached!").openPopup();
+                    return;
+                }
+                
+                carMarker.setLatLng(routePoints[currentIndex]);
+                
+                // Optional: Center map on car if near edge
+                const carPos = map.latLngToContainerPoint(routePoints[currentIndex]);
+                const bounds = map.getBounds().pad(-0.3); // 30% padding
+                
+                if (!bounds.contains(routePoints[currentIndex])) {
+                    map.panTo(routePoints[currentIndex], {
+                        animate: true,
+                        duration: 0.5
+                    });
+                }
+            }, 100); // Adjust speed (ms per point)
         }
 
         // Helper functions
