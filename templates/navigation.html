@@ -606,7 +606,7 @@
             if (!route.geometry || !route.geometry.coordinates) return;
             
             // Convert coordinates to LatLng array
-            const latLngs = decodePolyline(route.geometry);
+            const latLngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
             
             // Draw route with more realistic styling
             const routeLine = L.polyline(latLngs, {
@@ -670,14 +670,6 @@
             map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
         }
 
-        function decodePolyline(geometry) {
-            // OSRM returns polyline encoded geometry
-            // This is a simplified decoder for the format
-            if (!geometry || !geometry.coordinates) return [];
-            
-            return geometry.coordinates.map(coord => [coord[1], coord[0]]);
-        }
-
         function displayRouteOptions() {
             const container = document.getElementById('routeOptionsList');
             if (!container) return;
@@ -734,7 +726,7 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Locating...';
 
             try {
-                const position = await new Promise((resolve, reject) {
+                const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
                         timeout: 10000
