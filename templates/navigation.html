@@ -304,10 +304,9 @@
             maxLng: 121.11
         };
 
-        // GraphHopper API configuration
-        const GRAPHHOPPER_API_KEY = ''; // Add your GraphHopper API key here
-        const GRAPHHOPPER_API_URL = 'https://graphhopper.com/api/1/route';
-        
+        // OSRM API endpoint (using public OSRM demo server)
+        const OSRM_API = 'https://router.project-osrm.org/route/v1';
+
         // Main initialization
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
@@ -580,8 +579,8 @@
                     throw new Error("Could not find locations");
                 }
                 
-                // Calculate route using GraphHopper
-                alternativeRoutes = await calculateGraphHopperRoutes(startCoords, endCoords);
+                // Calculate route using OSRM
+                alternativeRoutes = await calculateOSRMRoutes(startCoords, endCoords);
                 
                 if (alternativeRoutes.length === 0) {
                     throw new Error("No routes found");
@@ -602,60 +601,46 @@
             }
         }
 
-        // GraphHopper Route Calculation
-        async function calculateGraphHopperRoutes(start, end) {
+        // OSRM Route Calculation
+        async function calculateOSRMRoutes(start, end) {
             try {
                 // Determine profile based on transport mode
                 let profile;
                 switch (transportMode) {
                     case 'walk': profile = 'foot'; break;
-                    case 'motorcycle': profile = 'motorcycle'; break;
+                    case 'motorcycle': profile = 'bike'; break; // Using bike as proxy for motorcycle
                     default: profile = 'car';
                 }
         
-                // Build GraphHopper API URL
-                const url = `${1a79eb3b-042d-4b7d-81ff-f77fe2d98ef0}?point=${start.lat},${start.lng}&point=${end.lat},${end.lng}&profile=${profile}&locale=en&key=${1a79eb3b-042d-4b7d-81ff-f77fe2d98ef0}&instructions=true&calc_points=true&alternative_route.max_paths=3`;
+                // Build OSRM API URL
+                const url = `${OSRM_API}/${profile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&alternatives=true&steps=true`;
         
                 const response = await fetch(url);
                 if (!response.ok) {
-                    throw new Error(`GraphHopper API error: ${response.status}`);
+                    throw new Error(`OSRM API error: ${response.status}`);
                 }
         
                 const data = await response.json();
         
-                if (data.paths && data.paths.length === 0) {
-                    throw new Error(`No routes found: ${data.message || 'Unknown error'}`);
+                if (data.code !== 'Ok') {
+                    throw new Error(`OSRM error: ${data.message}`);
                 }
         
                 // Process routes
-                const routes = data.paths.map((route, index) => {
-                    // Convert geometry to coordinates if it's encoded
-                    let coordinates = [];
-                    if (route.points) {
-                        // Decode the polyline if needed (GraphHopper might return encoded polyline)
-                        coordinates = L.PolylineUtil.decode(route.points);
-                        // Convert to [lng, lat] format
-                        coordinates = coordinates.map(coord => [coord.lng, coord.lat]);
-                    } else if (route.points_encoded === false && route.points?.coordinates) {
-                        coordinates = route.points.coordinates;
-                    }
-                    
-                    // Process instructions for flood warnings
-                    const stepsWithWarnings = route.instructions.map(instruction => {
+                const routes = data.routes.map((route, index) => {
+                    // Check flood intersections for each step
+                    const stepsWithWarnings = route.legs[0].steps.map(step => {
                         return {
-                            ...instruction,
-                            hasFloodWarning: checkFloodIntersectionForStep(instruction)
+                            ...step,
+                            hasFloodWarning: checkFloodIntersectionForStep(step)
                         };
                     });
         
                     return {
                         id: index,
                         distance: route.distance,
-                        duration: route.time / 1000, // Convert from ms to seconds
-                        geometry: {
-                            type: "LineString",
-                            coordinates: coordinates
-                        },
+                        duration: route.duration,
+                        geometry: route.geometry,
                         steps: stepsWithWarnings,
                         hasFlood: stepsWithWarnings.some(step => step.hasFloodWarning),
                         safetyScore: calculateSafetyScore(stepsWithWarnings)
@@ -664,7 +649,7 @@
         
                 return routes;
             } catch (error) {
-                console.error("GraphHopper routing error:", error);
+                console.error("OSRM routing error:", error);
                 throw error;
             }
         }
@@ -681,9 +666,9 @@
             ];
         
             // Check if step has a name and matches any flood-prone roads
-            if (step.street_name) {
+            if (step.name) {
                 return floodProneRoads.some(road => 
-                    step.street_name.toLowerCase().includes(road.toLowerCase())
+                    step.name.toLowerCase().includes(road.toLowerCase())
                 );
             }
             return false;
@@ -727,38 +712,30 @@
             if (route.steps) {
                 route.steps.forEach(step => {
                     // TURN INDICATORS
-                    if (step.interval && step.interval.length >= 2) {
-                        const startIdx = step.interval[0];
-                        const endIdx = step.interval[1];
-                        if (startIdx < latLngs.length && endIdx < latLngs.length) {
-                            const turnPoint = latLngs[endIdx];
-                            L.circleMarker(turnPoint, {
-                                radius: 8,
-                                color: '#FFD700',
-                                fillColor: '#FFD700',
-                                fillOpacity: 1
-                            }).addTo(routeLayer)
-                            .bindPopup(`${step.text}`);
-                        }
+                    if (step.maneuver && !['depart','arrive','continue'].includes(step.maneuver.type)) {
+                        const turnPoint = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
+                        L.circleMarker(turnPoint, {
+                            radius: 8,
+                            color: '#FFD700',
+                            fillColor: '#FFD700',
+                            fillOpacity: 1
+                        }).addTo(routeLayer)
+                        .bindPopup(`${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")}`);
                     }
                     
-                    // FLOOD WARNINGS
-                    if (step.hasFloodWarning && step.interval && step.interval.length >= 2) {
-                        const startIdx = step.interval[0];
-                        const endIdx = step.interval[1];
-                        if (startIdx < latLngs.length && endIdx < latLngs.length) {
-                            const stepLatLngs = latLngs.slice(startIdx, endIdx + 1);
-                            L.polyline(stepLatLngs, {
-                                color: '#EF4444',
-                                weight: 8,
-                                dashArray: '10, 5'
-                            }).addTo(routeLayer);
-                        }
+                    // FLOOD WARNINGS (existing)
+                    if (step.hasFloodWarning && step.geometry?.coordinates) {
+                        const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+                        L.polyline(stepLatLngs, {
+                            color: '#EF4444',
+                            weight: 8,
+                            dashArray: '10, 5'
+                        }).addTo(routeLayer);
                     }
                 });
             }
             
-            // Direction arrows
+            // Direction arrows (existing)
             L.polylineDecorator(routeLine, {
                 patterns: [{
                     offset: 25,
@@ -910,7 +887,7 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Locating...';
 
             try {
-                const position = await new Promise((resolve, reject) {
+                const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
                         timeout: 10000
@@ -931,6 +908,7 @@
                             className: 'user-location-marker',
                             html: '<i class="fas fa-circle-dot text-blue-600 text-2xl"></i>',
                             iconSize: [30, 30]
+                        })
                     }).addTo(map).bindPopup("Your Location");
                 }
                 
