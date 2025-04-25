@@ -229,7 +229,6 @@
                         <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-instagram"></i></a>
                         <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-linkedin-in"></i></a>
                     </div>
-                </div>
             </div>
             <div class="mt-4 text-center text-xs text-blue-100">
                 © 2025 FloodSafe Navigation. All rights reserved.
@@ -436,7 +435,7 @@
             });
         }
 
-       function startVoiceGuidance() {
+        function startVoiceGuidance() {
             if (!currentRoute) {
                 showNotification("Please calculate a route first", "error");
                 return;
@@ -482,7 +481,7 @@
                             `in ${distanceInKm} kilometers` : 
                             `in ${distanceInMeters} meters`;
                         
-                        instruction = `${distancePhrase}, ${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")} ${roadName}`;
+                        instruction = `${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")} on ${roadName} ${distancePhrase}`;
                     }
         
                     // Add flood warnings if applicable
@@ -502,7 +501,7 @@
                 // Final arrival message
                 setTimeout(() => {
                     if (voiceActive) speak(`You have arrived at ${destName}`);
-                }, nextInstructionDelay);
+                }, nextInstruction);
             } else {
                 // Fallback if no steps available
                 speak("Follow the highlighted route to your destination.");
@@ -592,7 +591,7 @@
         }
 
         // OSRM Route Calculation
-       async function calculateOSRMRoutes(start, end) {
+        async function calculateOSRMRoutes(start, end) {
             try {
                 // Determine profile based on transport mode
                 let profile;
@@ -676,86 +675,94 @@
         function displayRoute(route) {
             routeLayer.clearLayers();
             
-            if (!route.geometry || !route.geometry.coordinates) return;
-            
-            // Convert coordinates to LatLng array
-            const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
-            
-            // Draw the main route line
-            const routeLine = L.polyline(latLngs, {
-                color: '#3B82F6',
-                weight: 6,
-                opacity: 0.9,
-                lineJoin: 'round',
-                lineCap: 'round'
-            }).addTo(routeLayer);
-            
-            // Highlight flood-prone segments
-            if (route.steps) {
-                route.steps.forEach(step => {
-                    if (step.hasFloodWarning && step.geometry) {
-                        const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
-                        L.polyline(stepLatLngs, {
-                            color: '#EF4444',
-                            weight: 8,
-                            opacity: 0.7,
-                            dashArray: '10, 5'
-                        }).addTo(routeLayer)
-                        .bindPopup(`Flood warning: ${step.name || 'This road'}`);
-                    }
-                });
+            if (!route.geometry || !route.geometry.coordinates) {
+                console.error("Invalid route geometry data");
+                return;
             }
             
-            // Add direction arrows
-            L.polylineDecorator(routeLine, {
-                patterns: [
-                    {
-                        offset: 25,
-                        repeat: 50,
-                        symbol: L.Symbol.arrowHead({
-                            pixelSize: 10,
-                            pathOptions: {
-                                color: route.hasFlood ? '#FFFFFF' : '#FFFFFF',
-                                fillOpacity: 0.8,
-                                weight: 0
-                            }
-                        })
-                    }
-                ]
-            }).addTo(routeLayer);
-            
-            // Add markers for start and end points
-            if (latLngs.length > 0) {
-                // Start marker
-                L.marker(latLngs[0], {
-                    icon: L.divIcon({
-                        className: 'start-marker',
-                        html: '<div class="text-white bg-blue-600 rounded-full p-1"><i class="fas fa-map-marker-alt"></i></div>',
-                        iconSize: [30, 30]
-                    })
-                }).addTo(routeLayer).bindPopup("Start Point");
+            try {
+                // Convert coordinates to LatLng array
+                const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
                 
-                // End marker
-                L.marker(latLngs[latLngs.length - 1], {
-                    icon: L.divIcon({
-                        className: 'end-marker',
-                        html: '<div class="text-white bg-red-600 rounded-full p-1"><i class="fas fa-flag-checkered"></i></div>',
-                        iconSize: [30, 30]
-                    })
-                }).addTo(routeLayer).bindPopup("Destination");
+                // Draw the main route line
+                const routeLine = L.polyline(latLngs, {
+                    color: '#3B82F6',
+                    weight: 6,
+                    opacity: 0.9,
+                    lineJoin: 'round',
+                    lineCap: 'round'
+                }).addTo(routeLayer);
+                
+                // Highlight flood-prone segments
+                if (route.steps) {
+                    route.steps.forEach(step => {
+                        if (step.hasFloodWarning && step.geometry && step.geometry.coordinates) {
+                            const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+                            L.polyline(stepLatLngs, {
+                                color: '#EF4444',
+                                weight: 8,
+                                opacity: 0.7,
+                                dashArray: '10, 5'
+                            }).addTo(routeLayer)
+                            .bindPopup(`Flood warning: ${step.name || 'This road'}`);
+                        }
+                    });
+                }
+                
+                // Add direction arrows
+                L.polylineDecorator(routeLine, {
+                    patterns: [
+                        {
+                            offset: 25,
+                            repeat: 50,
+                            symbol: L.Symbol.arrowHead({
+                                pixelSize: 10,
+                                pathOptions: {
+                                    color: route.hasFlood ? '#FFFFFF' : '#FFFFFF',
+                                    fillOpacity: 0.8,
+                                    weight: 0
+                                }
+                            })
+                        }
+                    ]
+                }).addTo(routeLayer);
+                
+                // Add markers for start and end points
+                if (latLngs.length > 0) {
+                    // Start marker
+                    L.marker(latLngs[0], {
+                        icon: L.divIcon({
+                            className: 'start-marker',
+                            html: '<div class="text-white bg-blue-600 rounded-full p-1"><i class="fas fa-map-marker-alt"></i></div>',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(routeLayer).bindPopup("Start Point");
+                    
+                    // End marker
+                    L.marker(latLngs[latLngs.length - 1], {
+                        icon: L.divIcon({
+                            className: 'end-marker',
+                            html: '<div class="text-white bg-red-600 rounded-full p-1"><i class="fas fa-flag-checkered"></i></div>',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(routeLayer).bindPopup("Destination");
+                }
+                
+                // Update route stats
+                document.getElementById('ml-route-distance').textContent = `${(route.distance / 1000).toFixed(1)} km`;
+                document.getElementById('ml-route-time').textContent = formatDuration(route.duration);
+                document.getElementById('ml-route-safety').textContent = `${route.safetyScore}/10`;
+                document.getElementById('ml-route-safety').className = route.hasFlood ? 'font-bold text-red-600' : 'font-bold text-green-600';
+                document.getElementById('ml-route-insight').textContent = route.hasFlood ? 
+                    'Warning: This route passes through flood-prone areas. Consider alternative routes.' : 
+                    'This route appears safe with no flood risks detected.';
+                
+                // Fit map to route bounds with padding
+                map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+            } catch (error) {
+                console.error("Error displaying route:", error);
+                showNotification("Failed to display route on map", "error");
             }
-            
-            // Update route stats
-            document.getElementById('ml-route-distance').textContent = `${(route.distance / 1000).toFixed(1)} km`;
-            document.getElementById('ml-route-time').textContent = formatDuration(route.duration);
-            document.getElementById('ml-route-safety').textContent = `${route.safetyScore}/10`;
-            document.getElementById('ml-route-safety').className = route.hasFlood ? 'font-bold text-red-600' : 'font-bold text-green-600';
-            document.getElementById('ml-route-insight').textContent = route.hasFlood ? 
-                'Warning: This route passes through flood-prone areas. Consider alternative routes.' : 
-                'This route appears safe with no flood risks detected.';
-            
-            // Fit map to route bounds with padding
-            map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
         }
 
         function displayRouteOptions() {
@@ -814,7 +821,7 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Locating...';
 
             try {
-                const position = await new Promise((resolve, reject) => {
+                const position = await new Promise((resolve, reject) {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
                         timeout: 10000
