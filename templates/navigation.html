@@ -257,6 +257,7 @@
         let voiceActive = false;
         let speechSynthesis = window.speechSynthesis;
         let speechUtterance = new SpeechSynthesisUtterance();
+        let emergencyData = [];
         let lagunaLocations = [
             { display_name: "Carmona-Timbao Road, Biñan, Laguna", lat: 14.31147, lon: 121.06403 },
             { display_name: "South City Drive, Biñan, Laguna", lat: 14.32477, lon: 121.07339 },
@@ -291,7 +292,8 @@
             'barangay_hall': { icon: 'fa-landmark', color: '#3B82F6' },
             'police_station': { icon: 'fa-shield-alt', color: '#1D4ED8' },
             'fire_station': { icon: 'fa-fire-extinguisher', color: '#DC2626' },
-            'evacuation_center': { icon: 'fa-home', color: '#10B981' }
+            'evacuation_center': { icon: 'fa-home', color: '#10B981' },
+            'hospital': { icon: 'fa-hospital', color: '#EF4444' }
         };
 
         // Biñan boundaries
@@ -685,95 +687,150 @@
         }
 
         // Display functions
-      function displayRoute(route) {
-        routeLayer.clearLayers();
-        
-        if (!route.geometry?.coordinates) {
-            console.error("No route coordinates found:", route);
-            return;
-        }
-        
-        console.log("Displaying route with coordinates:", route.geometry.coordinates.length);
-        
-        // Convert coordinates
-        const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
-        
-        // Enhanced main route
-        const routeLine = L.polyline(latLngs, {
-            color: '#3366FF',
-            weight: 7,
-            opacity: 1,
-            className: 'route-line'
-        }).addTo(routeLayer);
-        
-        // Process steps
-        if (route.steps) {
-            route.steps.forEach(step => {
-                // TURN INDICATORS
-                if (step.maneuver && !['depart','arrive','continue'].includes(step.maneuver.type)) {
-                    const turnPoint = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
-                    L.circleMarker(turnPoint, {
-                        radius: 8,
-                        color: '#FFD700',
-                        fillColor: '#FFD700',
-                        fillOpacity: 1
-                    }).addTo(routeLayer)
-                    .bindPopup(`${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")}`);
-                }
-                
-                // FLOOD WARNINGS (existing)
-                if (step.hasFloodWarning && step.geometry?.coordinates) {
-                    const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
-                    L.polyline(stepLatLngs, {
-                        color: '#EF4444',
-                        weight: 8,
-                        dashArray: '10, 5'
-                    }).addTo(routeLayer);
-                }
-            });
-        }
-        
-        // Direction arrows (existing)
-        L.polylineDecorator(routeLine, {
-            patterns: [{
-                offset: 25,
-                repeat: 50,
-                symbol: L.Symbol.arrowHead({
-                    pixelSize: 12,
-                    pathOptions: { 
-                        color: '#FFFFFF',
-                        fillOpacity: 1 
+        function displayRoute(route) {
+            routeLayer.clearLayers();
+            
+            if (!route.geometry?.coordinates) {
+                console.error("No route coordinates found:", route);
+                return;
+            }
+            
+            console.log("Displaying route with coordinates:", route.geometry.coordinates.length);
+            
+            // Convert coordinates
+            const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+            
+            // Enhanced main route
+            const routeLine = L.polyline(latLngs, {
+                color: '#3366FF',
+                weight: 7,
+                opacity: 1,
+                className: 'route-line'
+            }).addTo(routeLayer);
+            
+            // Process steps
+            if (route.steps) {
+                route.steps.forEach(step => {
+                    // TURN INDICATORS
+                    if (step.maneuver && !['depart','arrive','continue'].includes(step.maneuver.type)) {
+                        const turnPoint = L.latLng(step.maneuver.location[1], step.maneuver.location[0]);
+                        L.circleMarker(turnPoint, {
+                            radius: 8,
+                            color: '#FFD700',
+                            fillColor: '#FFD700',
+                            fillOpacity: 1
+                        }).addTo(routeLayer)
+                        .bindPopup(`${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")}`);
                     }
-                })
-            }]
-        }).addTo(routeLayer);
-        
-        // Start/end markers (existing)
-        addRouteMarkers(latLngs);
-        
-        // Update UI (existing)
-        updateRouteStats(route);
-        
-        // Make sure the route is visible on the map
-        try {
-            // Fit map to route bounds with padding
-            const bounds = routeLine.getBounds();
-            if (bounds.isValid()) {
-                map.fitBounds(bounds, {
-                    padding: [50, 50],
-                    maxZoom: 15
+                    
+                    // FLOOD WARNINGS (existing)
+                    if (step.hasFloodWarning && step.geometry?.coordinates) {
+                        const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+                        L.polyline(stepLatLngs, {
+                            color: '#EF4444',
+                            weight: 8,
+                            dashArray: '10, 5'
+                        }).addTo(routeLayer);
+                    }
                 });
-                console.log("Map fitted to route bounds");
-            } else {
-                console.warn("Route bounds invalid, using start/end points");
-                // Fallback: zoom to include start and end points
-                if (latLngs.length >= 2) {
-                    const startEndBounds = L.latLngBounds([latLngs[0], latLngs[latLngs.length - 1]]);
-                    map.fitBounds(startEndBounds, {
-                        padding: [100, 100],
+            }
+            
+            // Direction arrows (existing)
+            L.polylineDecorator(routeLine, {
+                patterns: [{
+                    offset: 25,
+                    repeat: 50,
+                    symbol: L.Symbol.arrowHead({
+                        pixelSize: 12,
+                        pathOptions: { 
+                            color: '#FFFFFF',
+                            fillOpacity: 1 
+                        }
+                    })
+                }]
+            }).addTo(routeLayer);
+            
+            // Start/end markers
+            addRouteMarkers(latLngs);
+            
+            // Update UI
+            updateRouteStats(route);
+            
+            // Make sure the route is visible on the map
+            try {
+                // Fit map to route bounds with padding
+                const bounds = routeLine.getBounds();
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds, {
+                        padding: [50, 50],
                         maxZoom: 15
                     });
-                
+                    console.log("Map fitted to route bounds");
+                } else {
+                    console.warn("Route bounds invalid, using start/end points");
+                    // Fallback: zoom to include start and end points
+                    if (latLngs.length >= 2) {
+                        const startEndBounds = L.latLngBounds([latLngs[0], latLngs[latLngs.length - 1]]);
+                        map.fitBounds(startEndBounds, {
+                            padding: [100, 100],
+                            maxZoom: 15
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error fitting map to route:", error);
+            }
+        }
+        
+        function addRouteMarkers(latLngs) {
+            if (latLngs.length < 2) return;
+            
+            // Start marker
+            L.marker(latLngs[0], {
+                icon: L.divIcon({
+                    className: 'start-marker',
+                    html: '<i class="fas fa-location-dot text-green-600 text-2xl"></i>',
+                    iconSize: [30, 30]
+                })
+            }).addTo(routeLayer).bindPopup("Start Point");
+            
+            // End marker
+            L.marker(latLngs[latLngs.length - 1], {
+                icon: L.divIcon({
+                    className: 'end-marker',
+                    html: '<i class="fas fa-flag-checkered text-red-600 text-2xl"></i>',
+                    iconSize: [30, 30]
+                })
+            }).addTo(routeLayer).bindPopup("Destination");
+        }
+        
+        function updateRouteStats(route) {
+            document.getElementById('ml-route-time').textContent = formatDuration(route.duration);
+            document.getElementById('ml-route-distance').textContent = (route.distance / 1000).toFixed(1) + ' km';
+            document.getElementById('ml-route-safety').textContent = route.safetyScore + '/10';
+            
+            // Update safety score color
+            const safetyScoreElement = document.getElementById('ml-route-safety');
+            safetyScoreElement.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
+            
+            if (route.safetyScore >= 8) {
+                safetyScoreElement.classList.add('text-green-600');
+            } else if (route.safetyScore >= 5) {
+                safetyScoreElement.classList.add('text-yellow-600');
+            } else {
+                safetyScoreElement.classList.add('text-red-600');
+            }
+            
+            // Update AI insight
+            const insightElement = document.getElementById('ml-route-insight');
+            if (route.hasFlood) {
+                const floodSteps = route.steps.filter(step => step.hasFloodWarning).length;
+                insightElement.textContent = `This route has ${floodSteps} flood-prone area${floodSteps !== 1 ? 's' : ''}. Consider alternative routes for better safety.`;
+            } else {
+                insightElement.textContent = "This route is clear of known flood risks. Safe travels!";
+            }
+        }
+        
         function displayRouteOptions() {
             const container = document.getElementById('routeOptionsList');
             if (!container) return;
