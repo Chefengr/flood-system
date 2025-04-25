@@ -149,6 +149,31 @@
       .animate-fade-out {
           animation: fadeOut 0.5s ease-in-out;
       }
+    // CSS for Notifications (add to your style section)
+      .notification {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          padding: 12px 16px;
+          border-radius: 8px;
+          color: white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 1000;
+          max-width: 280px;
+          animation: fadeIn 0.3s ease-in;
+          transform: translateY(20px);
+          opacity: 0;
+      }
+      
+      .notification.show {
+          transform: translateY(0);
+          opacity: 1;
+      }
+      
+      @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
   
       /* Chatbot styles */
       #chat-button {
@@ -283,32 +308,70 @@
 </head>
 <body class="bg-gray-100">
 <!-- Navigation Bar -->
- <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
-        <a href="{{ url_for('routes.index') }}">
-            <img class="w-32 cursor-pointer" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
-        </a>
-        <div class="hidden md:flex space-x-6">
-            <a href="{{ url_for('routes.index') }}" class="hover:underline">Home</a>
-            <a href="{{ url_for('routes.navigation') }}" class="hover:underline">Navigation</a>
-            <a href="{{ url_for('routes.data') }}" class="hover:underline">Flood Data</a>
-            <a href="{{ url_for('routes.about') }}" class="hover:underline">About</a>
-            <a href="{{ url_for('routes.contact') }}" class="hover:underline">Contact</a>
-        </div>
-        <div class="md:hidden">
-            <button id="mobile-menu-button" class="text-2xl">&#9776;</button>
-        </div>
-    </nav>
-    
-   <!-- Mobile Menu -->
-    <div id="mobile-menu" class="hidden md:hidden bg-blue-500 text-white p-3 shadow-lg space-y-2">
-        <a href="{{ url_for('routes.index') }}" class="block px-2 py-1 hover:underline">Home</a>
-        <a href="{{ url_for('routes.navigation') }}" class="block px-2 py-1 hover:underline">Navigation</a>
-        <a href="{{ url_for('routes.data') }}" class="block px-2 py-1 hover:underline">Flood Data</a>
-        <a href="{{ url_for('routes.about') }}" class="block px-2 py-1 hover:underline">About</a>
-        <a href="{{ url_for('routes.contact') }}" class="block px-2 py-1 hover:underline">Contact</a>
-    </div>
-
+  <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
+      <a href="{{ url_for('routes.index') }}">
+          <img class="w-32 cursor-pointer" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo">
+      </a>
+      <div class="hidden md:flex space-x-6">
+          <a href="{{ url_for('routes.index') }}" class="hover:underline">Home</a>
+          <a href="{{ url_for('routes.navigation') }}" class="hover:underline">Navigation</a>
+          <a href="{{ url_for('routes.data') }}" class="hover:underline">Flood Data</a>
+          <a href="{{ url_for('routes.about') }}" class="hover:underline">About</a>
+          <a href="{{ url_for('routes.contact') }}" class="hover:underline">Contact</a>
+      </div>
+      <div class="md:hidden">
+          <button id="mobile-menu-button" class="text-2xl focus:outline-none">
+              <i class="fas fa-bars"></i>
+          </button>
+      </div>
+  </nav>
   
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden md:hidden bg-blue-600 text-white shadow-lg">
+      <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <a href="{{ url_for('routes.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Home</a>
+          <a href="{{ url_for('routes.navigation') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Navigation</a>
+          <a href="{{ url_for('routes.data') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Flood Data</a>
+          <a href="{{ url_for('routes.about') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">About</a>
+          <a href="{{ url_for('routes.contact') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">Contact</a>
+      </div>
+  </div>
+  
+  <script>
+  // Mobile Menu Toggle
+  document.getElementById('mobile-menu-button').addEventListener('click', function() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+      
+      // Toggle aria-expanded attribute
+      const isExpanded = this.getAttribute('aria-expanded') === 'true';
+      this.setAttribute('aria-expanded', !isExpanded);
+      
+      // Change icon
+      const icon = this.querySelector('i');
+      if (icon.classList.contains('fa-bars')) {
+          icon.classList.remove('fa-bars');
+          icon.classList.add('fa-times');
+      } else {
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+      }
+  });
+  
+  // Close menu when clicking outside
+  document.addEventListener('click', function(event) {
+      const menu = document.getElementById('mobile-menu');
+      const button = document.getElementById('mobile-menu-button');
+      
+      if (!menu.contains(event.target) && !button.contains(event.target)) {
+          menu.classList.add('hidden');
+          button.setAttribute('aria-expanded', 'false');
+          button.querySelector('i').classList.remove('fa-times');
+          button.querySelector('i').classList.add('fa-bars');
+      }
+  });
+  </script>
+    
   <!-- Main Content -->
   <main class="container mx-auto p-4 max-w-4xl">
     <h1 class="text-2xl font-bold text-center mb-6">Flood-Safe Route Planner</h1>
@@ -1222,107 +1285,88 @@ async function calculateSafeRoute() {
 }
       // Calculate safe route with alternative options
       async function calculateSafeRoute() {
-        const startInput = document.getElementById('startInput').value;
-        const endInput = document.getElementById('endInput').value;
-  
-        if (!startInput || !endInput) {
-            showNotification("Please enter both start and destination locations", "error");
-            return;
+    const startInput = document.getElementById('startInput').value;
+    const endInput = document.getElementById('endInput').value;
+    const calculateBtn = document.getElementById('calculateRoute');
+
+    if (!startInput || !endInput) {
+        showNotification("Please enter both start and destination locations", "error");
+        return;
+    }
+
+    // Set loading state
+    calculateBtn.disabled = true;
+    calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Calculating...';
+    
+    try {
+        showNotification("Calculating safest route...", "info");
+        
+        let startCoords, endCoords;
+        
+        // Try to parse as coordinates first
+        const coordRegex = /^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/;
+        const startMatch = startInput.match(coordRegex);
+        const endMatch = endInput.match(coordRegex);
+        
+        if (startMatch) {
+            startCoords = { lat: parseFloat(startMatch[1]), lng: parseFloat(startMatch[2]) };
+        } else {
+            const startGeocode = await geocodeAddress(startInput);
+            if (!startGeocode) throw new Error("Could not find start location");
+            startCoords = startGeocode;
         }
-  
-        try {
-            showNotification("Calculating safest route...", "info");
-            
-            // For demo purposes, we'll use mock routes
-            let startCoords, endCoords;
-            
-            // Try to parse as coordinates first
-            const coordRegex = /^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/;
-            const startMatch = startInput.match(coordRegex);
-            const endMatch = endInput.match(coordRegex);
-            
-            if (startMatch) {
-                startCoords = { lat: parseFloat(startMatch[1]), lng: parseFloat(startMatch[2]) };
-            } else {
-                // Geocode the start address
-                const startGeocode = await geocodeAddress(startInput);
-                if (!startGeocode) throw new Error("Could not find start location");
-                startCoords = startGeocode;
-            }
-            
-            if (endMatch) {
-                endCoords = { lat: parseFloat(endMatch[1]), lng: parseFloat(endMatch[2]) };
-            } else {
-                // Geocode the end address
-                const endGeocode = await geocodeAddress(endInput);
-                if (!endGeocode) throw new Error("Could not find destination");
-                endCoords = endGeocode;
-            }
-            
-            // Get OSRM route with alternatives
-            const response = await fetch(
-                `http://router.project-osrm.org/route/v1/driving/` +
-                `${startCoords.lng},${startCoords.lat};${endCoords.lng},${endCoords.lat}?` +
-                `overview=full&geometries=geojson&alternatives=true`
-            );
-  
-            const routeData = await response.json();
-  
-            if (routeData.code !== "Ok") {
-                throw new Error(routeData.message || "Routing failed");
-            }
-  
-            // Process all alternative routes
-            alternativeRoutes = routeData.routes.map((osrmRoute, index) => ({
-                geometry: {
-                    coordinates: osrmRoute.geometry.coordinates
-                },
-                distance: osrmRoute.distance,
-                duration: osrmRoute.duration,
-                legs: [{
-                    steps: osrmRoute.legs[0].steps
-                }],
-                isSelected: index === 0,
-                hasFlood: false, // You'll need to implement flood detection
-                riskLevel: 'LOW',
-                instructions: osrmRoute.legs[0].steps // For voice navigation
-            }));
-  
-            selectedRouteIndex = 0;
-            currentRoute = alternativeRoutes[selectedRouteIndex];
-            
-            // Display route options
-            displayRouteOptions();
-            
-            // Show the first route
-            displayRoute(currentRoute);
-            
-            // Show route info
-            document.getElementById('routeInfo').classList.remove('hidden');
-            document.getElementById('routeOptions').classList.remove('hidden');
-            document.getElementById('routeDistance').textContent = (currentRoute.distance / 1000).toFixed(1) + ' km';
-            document.getElementById('routeDuration').textContent = formatDuration(currentRoute.duration);
-            document.getElementById('routeRisk').textContent = currentRoute.hasFlood ? 'HIGH' : 'LOW';
-            document.getElementById('routeRisk').className = `font-medium ${currentRoute.hasFlood ? 'text-red-600' : 'text-green-600'}`;
-            
-            showNotification("Route calculated successfully", "success");
-            
-            // Speak instructions if voice guidance is on
-            if (voiceGuidance) {
-                speak("Route calculated. " + getRouteSummary(currentRoute));
-                setTimeout(() => speakNavigationInstructions(currentRoute.legs[0].steps), 1000);
-            } else {
-              // Still show turn list even if voice is off
-              displayTurnByTurnInstructions(currentRoute.legs[0].steps);
-            }
-        } catch (error) {
-            console.error("Route calculation error:", error);
-            showNotification("Could not calculate route: " + error.message, "error");
-            if (voiceGuidance) {
-                speak("Sorry, I couldn't calculate the route. Please try again.");
-            }
+        
+        if (endMatch) {
+            endCoords = { lat: parseFloat(endMatch[1]), lng: parseFloat(endMatch[2]) };
+        } else {
+            const endGeocode = await geocodeAddress(endInput);
+            if (!endGeocode) throw new Error("Could not find destination");
+            endCoords = endGeocode;
         }
-      }
+        
+        // Get routes from OSRM
+        alternativeRoutes = await generateOSRMRoutes(startCoords, endCoords);
+        
+        if (!alternativeRoutes || alternativeRoutes.length === 0) {
+            throw new Error("No routes found");
+        }
+
+        selectedRouteIndex = 0;
+        currentRoute = alternativeRoutes[selectedRouteIndex];
+        
+        // Display results
+        displayRouteOptions();
+        displayRoute(currentRoute);
+        
+        document.getElementById('routeInfo').classList.remove('hidden');
+        document.getElementById('routeOptions').classList.remove('hidden');
+        
+        // Update route info
+        document.getElementById('routeDistance').textContent = (currentRoute.distance / 1000).toFixed(1) + ' km';
+        document.getElementById('routeDuration').textContent = formatDuration(currentRoute.duration);
+        document.getElementById('routeRisk').textContent = currentRoute.hasFlood ? 'HIGH' : 'LOW';
+        document.getElementById('routeRisk').className = `font-medium ${currentRoute.hasFlood ? 'text-red-600' : 'text-green-600'}`;
+        
+        showNotification("Route calculated successfully", "success");
+        
+        if (voiceGuidance) {
+            speak("Route calculated. " + getRouteSummary(currentRoute));
+            setTimeout(() => speakNavigationInstructions(currentRoute.legs[0].steps), 1000);
+        } else {
+            displayTurnByTurnInstructions(currentRoute.legs[0].steps);
+        }
+    } catch (error) {
+        console.error("Route calculation error:", error);
+        showNotification("Could not calculate route: " + error.message, "error");
+        if (voiceGuidance) {
+            speak("Sorry, I couldn't calculate the route. Please try again.");
+        }
+    } finally {
+        // Reset button state
+        calculateBtn.disabled = false;
+        calculateBtn.innerHTML = '<i class="fas fa-route mr-2"></i> Calculate Safest Route';
+    }
+}
   
       function displayRoute(route) {
         routeLayer.clearLayers();
@@ -3099,22 +3143,39 @@ async function calculateSafeRoute() {
         };
       }
   
+      // Notification System with Size Fix
       function showNotification(message, type = "info") {
-        const notification = document.createElement('div');
-        notification.className = `notification fixed top-4 right-4 p-3 rounded-md text-white text-sm max-w-xs ${
-          type === "error" ? "bg-red-500" :
-          type === "warning" ? "bg-yellow-500" :
-          type === "success" ? "bg-green-500" :
-          "bg-blue-500"
-        }`;
-        notification.innerHTML = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-          notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
-          setTimeout(() => notification.remove(), 500);
-        }, 3000);
+          // Remove any existing notifications first
+          document.querySelectorAll('.notification').forEach(el => el.remove());
+          
+          const notification = document.createElement('div');
+          notification.className = `notification fixed bottom-4 right-4 p-3 rounded-md shadow-lg z-50 max-w-xs text-sm ${
+              type === "error" ? "bg-red-500" :
+              type === "warning" ? "bg-yellow-500" :
+              type === "success" ? "bg-green-500" :
+              "bg-blue-500"
+          }`;
+          
+          // Add close button
+          notification.innerHTML = `
+              <div class="flex justify-between items-start">
+                  <div class="flex-1">${message}</div>
+                  <button class="ml-2 text-white hover:text-gray-200 focus:outline-none" 
+                          onclick="this.parentElement.remove()">
+                      <i class="fas fa-times"></i>
+                  </button>
+              </div>
+          `;
+          
+          document.body.appendChild(notification);
+          
+          // Auto-dismiss after 5 seconds
+          setTimeout(() => {
+              notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+              setTimeout(() => notification.remove(), 300);
+          }, 5000);
       }
+
   
       function formatDuration(seconds) {
         const hours = Math.floor(seconds / 3600);
@@ -3144,43 +3205,60 @@ async function calculateSafeRoute() {
       }
 
     </script>
-  <footer class="bg-blue-600 text-white py-4">
+ <footer class="bg-blue-600 text-white py-4">
     <div class="max-w-4xl mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- About Us Section -->
             <div>
                 <h3 class="text-base font-bold mb-2">About Us</h3>
-                <p class="text-blue-100 text-xs">
+                <p class="text-blue-100 text-xs md:text-sm">
                     We provide real-time flood detection and route optimization to ensure safer travel during extreme weather conditions.
                 </p>
             </div>
 
-            <!-- Quick Links Section -->
+            <!-- Quick Links Section - Made Responsive -->
             <div>
                 <h3 class="text-base font-bold mb-2">Quick Links</h3>
-                <ul class="space-y-0.5 text-xs text-blue-100">
-                    <li><a href="index.html" class="hover:underline">Home</a></li>
-                    <li><a href="about.html" class="hover:underline">About Us</a></li>
-                    <li><a href="navigation.html" class="hover:underline">Navigation</a></li>
-                    <li><a href="flood-data.html" class="hover:underline">Flood Data</a></li>
+                <ul class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs md:text-sm text-blue-100">
+                    <li><a href="{{ url_for('routes.index') }}" class="hover:underline block py-1">Home</a></li>
+                    <li><a href="{{ url_for('routes.about') }}" class="hover:underline block py-1">About Us</a></li>
+                    <li><a href="{{ url_for('routes.navigation') }}" class="hover:underline block py-1">Navigation</a></li>
+                    <li><a href="{{ url_for('routes.data') }}" class="hover:underline block py-1">Flood Data</a></li>
+                    <li><a href="{{ url_for('routes.contact') }}" class="hover:underline block py-1">Contact</a></li>
+                    <li><a href="#" class="hover:underline block py-1">FAQ</a></li>
                 </ul>
             </div>
 
             <!-- Connect With Us Section -->
-            <div class="flex flex-col items-start">
+            <div>
                 <h3 class="text-base font-bold mb-2">Connect With Us</h3>
-                <div class="flex space-x-3 text-lg">
-                    <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="text-white hover:text-gray-300"><i class="fab fa-linkedin-in"></i></a>
+                <div class="flex space-x-4 text-lg">
+                    <a href="#" class="text-white hover:text-blue-200 transition-colors" aria-label="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="text-white hover:text-blue-200 transition-colors" aria-label="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-white hover:text-blue-200 transition-colors" aria-label="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="text-white hover:text-blue-200 transition-colors" aria-label="LinkedIn">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
                 </div>
+                <p class="mt-2 text-xs md:text-sm text-blue-100">
+                    Email: info@floodsafe.com<br>
+                    Phone: (123) 456-7890
+                </p>
             </div>
         </div>
 
         <!-- Footer Bottom -->
-        <div class="mt-4 text-center text-xs text-blue-100">
-            © 2025 FloodSafe Navigation. All rights reserved.
+        <div class="mt-4 pt-4 border-t border-blue-500 text-center text-xs text-blue-100">
+            © 2025 FloodSafe Navigation. All rights reserved.<br class="md:hidden">
+            <span class="hidden md:inline"> | </span>
+            <a href="#" class="hover:underline">Privacy Policy</a> | 
+            <a href="#" class="hover:underline">Terms of Service</a>
         </div>
     </div>
 </footer>
