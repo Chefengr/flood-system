@@ -291,6 +291,17 @@
             'evacuation_center': { icon: 'fa-home', color: '#10B981' }
         };
 
+        // Biñan boundaries
+        const BINAN_BOUNDS = {
+            minLat: 14.30,
+            maxLat: 14.36,
+            minLng: 121.05,
+            maxLng: 121.11
+        };
+
+        // OSRM API endpoint (using public OSRM demo server)
+        const OSRM_API = 'https://router.project-osrm.org/route/v1';
+
         // Main initialization
         document.addEventListener('DOMContentLoaded', function() {
             initMap();
@@ -338,7 +349,6 @@
             });
 
             // Transport mode buttons
-            // Replace the existing transport mode button event listener with this:
             document.querySelectorAll('.transport-mode').forEach(button => {
                 button.addEventListener('click', function() {
                     // Remove active class from all buttons
@@ -355,6 +365,7 @@
                     if (currentRoute) calculateSafeRoute();
                 });
             });
+
             // Smart routing priority buttons
             document.getElementById('priority-fastest').addEventListener('click', function() {
                 document.getElementById('priority-fastest').classList.add('bg-blue-600', 'text-white');
@@ -512,8 +523,8 @@
                     throw new Error("Could not find locations");
                 }
                 
-                // Calculate route (mock implementation - replace with real routing)
-                alternativeRoutes = await generateMockRoutes(startCoords, endCoords);
+                // Calculate route using OSRM
+                alternativeRoutes = await calculateOSRMRoutes(startCoords, endCoords);
                 
                 if (alternativeRoutes.length === 0) {
                     throw new Error("No routes found");
@@ -534,14 +545,68 @@
             }
         }
 
+        // OSRM Route Calculation
+        async function calculateOSRMRoutes(start, end) {
+            try {
+                // Determine profile based on transport mode
+                let profile;
+                switch(transportMode) {
+                    case 'walk': profile = 'foot'; break;
+                    case 'motorcycle': profile = 'bike'; break; // Using bike as proxy for motorcycle
+                    default: profile = 'car';
+                }
+                
+                // Build OSRM API URL
+                const url = `${OSRM_API}/${profile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&alternatives=true&steps=true`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`OSRM API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.code !== 'Ok') {
+                    throw new Error(`OSRM error: ${data.message}`);
+                }
+                
+                // Process routes
+                const routes = data.routes.map((route, index) => {
+                    // Check if route passes through flood areas (mock implementation)
+                    const hasFlood = checkFloodIntersection(route.geometry);
+                    
+                    return {
+                        id: index,
+                        distance: route.distance,
+                        duration: route.duration,
+                        geometry: route.geometry,
+                        steps: route.legs[0].steps,
+                        hasFlood: hasFlood,
+                        safetyScore: hasFlood ? 5 : 9 // Mock safety score
+                    };
+                });
+                
+                return routes;
+            } catch (error) {
+                console.error("OSRM routing error:", error);
+                throw error;
+            }
+        }
+
+        function checkFloodIntersection(geometry) {
+            // Mock implementation - in a real app, this would check against actual flood data
+            // Here we just randomly decide if the route has flood risk (30% chance)
+            return Math.random() < 0.3;
+        }
+
         // Display functions
-       function displayRoute(route) {
+        function displayRoute(route) {
             routeLayer.clearLayers();
             
             if (!route.geometry || !route.geometry.coordinates) return;
             
             // Convert coordinates to LatLng array
-            const latLngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            const latLngs = decodePolyline(route.geometry);
             
             // Draw route with more realistic styling
             const routeLine = L.polyline(latLngs, {
@@ -571,21 +636,46 @@
                 ]
             }).addTo(routeLayer);
             
-            // Add markers for key points
-            latLngs.forEach((point, index) => {
-                if (index > 0 && index < latLngs.length - 1) {
-                    L.circleMarker(point, {
-                        radius: 5,
-                        color: '#FFFFFF',
-                        weight: 2,
-                        fillColor: route.hasFlood ? '#EF4444' : '#3B82F6',
-                        fillOpacity: 1
-                    }).addTo(routeLayer).bindPopup(`Route point ${index}`);
-                }
-            });
+            // Add markers for start and end points
+            if (latLngs.length > 0) {
+                // Start marker
+                L.marker(latLngs[0], {
+                    icon: L.divIcon({
+                        className: 'start-marker',
+                        html: '<div class="text-white bg-blue-600 rounded-full p-1"><i class="fas fa-map-marker-alt"></i></div>',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(routeLayer).bindPopup("Start Point");
+                
+                // End marker
+                L.marker(latLngs[latLngs.length - 1], {
+                    icon: L.divIcon({
+                        className: 'end-marker',
+                        html: '<div class="text-white bg-red-600 rounded-full p-1"><i class="fas fa-flag-checkered"></i></div>',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(routeLayer).bindPopup("Destination");
+            }
+            
+            // Update route stats
+            document.getElementById('ml-route-distance').textContent = `${(route.distance / 1000).toFixed(1)} km`;
+            document.getElementById('ml-route-time').textContent = formatDuration(route.duration);
+            document.getElementById('ml-route-safety').textContent = `${route.safetyScore}/10`;
+            document.getElementById('ml-route-safety').className = route.hasFlood ? 'font-bold text-red-600' : 'font-bold text-green-600';
+            document.getElementById('ml-route-insight').textContent = route.hasFlood ? 
+                'Warning: This route passes through flood-prone areas. Consider alternative routes.' : 
+                'This route appears safe with no flood risks detected.';
             
             // Fit map to route bounds with padding
-            map.fitBounds(latLngs, { padding: [50, 50] });
+            map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+        }
+
+        function decodePolyline(geometry) {
+            // OSRM returns polyline encoded geometry
+            // This is a simplified decoder for the format
+            if (!geometry || !geometry.coordinates) return [];
+            
+            return geometry.coordinates.map(coord => [coord[1], coord[0]]);
         }
 
         function displayRouteOptions() {
@@ -644,7 +734,7 @@
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Locating...';
 
             try {
-                const position = await new Promise((resolve, reject) => {
+                const position = await new Promise((resolve, reject) {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
                         timeout: 10000
@@ -878,7 +968,7 @@
         }
 
         // Mock data generators (replace with real API calls)
-       async function mockGeocode(address) {
+        async function mockGeocode(address) {
             // First check exact matches
             const exactMatch = lagunaLocations.find(loc => 
                 loc.display_name.toLowerCase() === address.toLowerCase());
@@ -895,14 +985,7 @@
                 lng: BINAN_BOUNDS.minLng + (Math.random() * (BINAN_BOUNDS.maxLng - BINAN_BOUNDS.minLng))
             };
         }
-       async function generateMockRoutes(start, end) {
-            // Ensure both points are within Biñan
-            if (!isWithinBinan(start) start = constrainToBinan(start);
-            if (!isWithinBinan(end)) end = constrainToBinan(end);
-        
-            // Rest of your route generation code...
-        }
-        
+
         function isWithinBinan(point) {
             return point.lat >= BINAN_BOUNDS.minLat && 
                    point.lat <= BINAN_BOUNDS.maxLat &&
