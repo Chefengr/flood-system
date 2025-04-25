@@ -436,31 +436,77 @@
             });
         }
 
-        function startVoiceGuidance() {
+       function startVoiceGuidance() {
             if (!currentRoute) {
                 showNotification("Please calculate a route first", "error");
                 return;
             }
-            
+        
             voiceActive = true;
             document.getElementById('toggleVoiceGuidance').innerHTML = '<i class="fas fa-stop mr-2"></i> Stop Navigation';
             document.getElementById('voiceStatus').textContent = "Voice guidance is active";
-            
+        
+            // Get start and destination names
+            const startName = document.getElementById('startInput').value || "your location";
+            const destName = document.getElementById('endInput').value || "your destination";
+        
             // Initial announcement
-            speak(`Navigation started. Your route from ${document.getElementById('startInput').value} to ${document.getElementById('endInput').value} is ${(currentRoute.distance / 1000).toFixed(1)} kilometers long and will take approximately ${formatDuration(currentRoute.duration)}.`);
-            
-            // Simulate turn-by-turn guidance (in a real app, this would be based on actual route steps)
-            setTimeout(() => {
-                if (voiceActive) speak("In 500 meters, turn right onto Carmona-Timbao Road.");
-            }, 5000);
-            
-            setTimeout(() => {
-                if (voiceActive) speak("Warning: Flood risk detected ahead on South City Drive. Alternative route suggested.");
-            }, 10000);
-            
-            setTimeout(() => {
-                if (voiceActive) speak("You have arrived at your destination.");
-            }, 15000);
+            speak(`Starting navigation from ${startName} to ${destName}.`);
+        
+            if (currentRoute.steps && currentRoute.steps.length > 0) {
+                let cumulativeDistance = 0;
+                let nextInstructionDelay = 0;
+        
+                // Process each step for natural-sounding instructions
+                currentRoute.steps.forEach((step, index) => {
+                    cumulativeDistance += step.distance;
+                    const distanceInMeters = Math.round(step.distance);
+                    const distanceInKm = (distanceInMeters / 1000).toFixed(1);
+        
+                    // Skip very short steps (like depart instructions)
+                    if (distanceInMeters < 10) return;
+        
+                    // Format the instruction naturally
+                    let instruction = "";
+                    const roadName = step.name || "the road";
+                    
+                    // Determine instruction type
+                    if (step.maneuver.type === 'depart') {
+                        instruction = `Head ${step.maneuver.modifier || 'straight'} on ${roadName}`;
+                    } 
+                    else if (step.maneuver.type === 'arrive') {
+                        instruction = `You have arrived at ${destName}`;
+                    }
+                    else {
+                        const distancePhrase = distanceInMeters > 1000 ? 
+                            `in ${distanceInKm} kilometers` : 
+                            `in ${distanceInMeters} meters`;
+                        
+                        instruction = `${distancePhrase}, ${step.maneuver.instruction.replace(/<\/?[^>]+(>|$)/g, "")} ${roadName}`;
+                    }
+        
+                    // Add flood warnings if applicable
+                    if (step.hasFloodWarning) {
+                        instruction += `. Warning: Flood risk detected on ${roadName}`;
+                    }
+        
+                    // Schedule the instruction
+                    setTimeout(() => {
+                        if (voiceActive) speak(instruction);
+                    }, nextInstructionDelay);
+        
+                    // Update delay for next instruction (convert seconds to milliseconds)
+                    nextInstructionDelay += step.duration * 1000;
+                });
+        
+                // Final arrival message
+                setTimeout(() => {
+                    if (voiceActive) speak(`You have arrived at ${destName}`);
+                }, nextInstructionDelay);
+            } else {
+                // Fallback if no steps available
+                speak("Follow the highlighted route to your destination.");
+            }
         }
 
         function stopVoiceGuidance() {
@@ -546,53 +592,80 @@
         }
 
         // OSRM Route Calculation
-        async function calculateOSRMRoutes(start, end) {
+       async function calculateOSRMRoutes(start, end) {
             try {
                 // Determine profile based on transport mode
                 let profile;
-                switch(transportMode) {
+                switch (transportMode) {
                     case 'walk': profile = 'foot'; break;
                     case 'motorcycle': profile = 'bike'; break; // Using bike as proxy for motorcycle
                     default: profile = 'car';
                 }
-                
+        
                 // Build OSRM API URL
                 const url = `${OSRM_API}/${profile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&alternatives=true&steps=true`;
-                
+        
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`OSRM API error: ${response.status}`);
                 }
-                
+        
                 const data = await response.json();
-                
+        
                 if (data.code !== 'Ok') {
                     throw new Error(`OSRM error: ${data.message}`);
                 }
-                
+        
                 // Process routes
                 const routes = data.routes.map((route, index) => {
-                    // Check if route passes through flood areas (mock implementation)
-                    const hasFlood = checkFloodIntersection(route.geometry);
-                    
+                    // Check flood intersections for each step
+                    const stepsWithWarnings = route.legs[0].steps.map(step => {
+                        return {
+                            ...step,
+                            hasFloodWarning: checkFloodIntersectionForStep(step)
+                        };
+                    });
+        
                     return {
                         id: index,
                         distance: route.distance,
                         duration: route.duration,
                         geometry: route.geometry,
-                        steps: route.legs[0].steps,
-                        hasFlood: hasFlood,
-                        safetyScore: hasFlood ? 5 : 9 // Mock safety score
+                        steps: stepsWithWarnings,
+                        hasFlood: stepsWithWarnings.some(step => step.hasFloodWarning),
+                        safetyScore: calculateSafetyScore(stepsWithWarnings)
                     };
                 });
-                
+        
                 return routes;
             } catch (error) {
                 console.error("OSRM routing error:", error);
                 throw error;
             }
         }
-
+        
+        // New function to check flood risk for specific steps
+        function checkFloodIntersectionForStep(step) {
+            // In a real app, this would check against flood data
+            // For demo, we'll randomly assign flood warnings to some steps
+            const floodProneRoads = [
+                'Carmona-Timbao Road',
+                'South City Drive',
+                'Tubigan Road',
+                'Santo Tomas Road'
+            ];
+        
+            return step.name && floodProneRoads.some(road =>
+                step.name.includes(road) && Math.random() > 0.7
+            );
+        }
+        
+        // Function to calculate safety score based on number of flooded steps
+        function calculateSafetyScore(steps) {
+            const floodSteps = steps.filter(step => step.hasFloodWarning).length;
+            return 10 - Math.min(5, floodSteps); // Score ranges from 5 to 10
+        }
+        
         function checkFloodIntersection(geometry) {
             // Mock implementation - in a real app, this would check against actual flood data
             // Here we just randomly decide if the route has flood risk (30% chance)
@@ -606,17 +679,32 @@
             if (!route.geometry || !route.geometry.coordinates) return;
             
             // Convert coordinates to LatLng array
-            const latLngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            const latLngs = route.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
             
-            // Draw route with more realistic styling
+            // Draw the main route line
             const routeLine = L.polyline(latLngs, {
-                color: route.hasFlood ? '#EF4444' : '#3B82F6',
+                color: '#3B82F6',
                 weight: 6,
                 opacity: 0.9,
                 lineJoin: 'round',
-                lineCap: 'round',
-                dashArray: route.hasFlood ? '10, 5' : null
+                lineCap: 'round'
             }).addTo(routeLayer);
+            
+            // Highlight flood-prone segments
+            if (route.steps) {
+                route.steps.forEach(step => {
+                    if (step.hasFloodWarning && step.geometry) {
+                        const stepLatLngs = step.geometry.coordinates.map(coord => L.latLng(coord[1], coord[0]));
+                        L.polyline(stepLatLngs, {
+                            color: '#EF4444',
+                            weight: 8,
+                            opacity: 0.7,
+                            dashArray: '10, 5'
+                        }).addTo(routeLayer)
+                        .bindPopup(`Flood warning: ${step.name || 'This road'}`);
+                    }
+                });
+            }
             
             // Add direction arrows
             L.polylineDecorator(routeLine, {
