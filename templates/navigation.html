@@ -538,7 +538,7 @@
   }
 </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100">  
 <!-- Navigation Bar -->
   <nav class="flex items-center justify-between px-5 py-3 bg-blue-500 text-white shadow-md">
       <a href="{{ url_for('routes.index') }}">
@@ -3800,5 +3800,60 @@ function onDestinationReached() {
 <script src="{{ url_for('static', filename='script/chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='script/route-optimization.js') }}"></script>
 <script src="{{ url_for('static', filename='script/flood-detection.js') }}"></script>
+  function calculateSafeRoute() {
+  try {
+    // Simple test route (replace with your actual implementation)
+    const testRoute = {
+      coordinates: [
+        [14.3036, 121.0781], // Start: Biñan
+        [14.3040, 121.0785],
+        [14.3050, 121.0790],
+        [14.32477, 121.07339] // End: Nearby point
+      ],
+      distance: 3500,
+      duration: 900
+    };
+    
+    displayRoute(testRoute);
+    showNotification("Route calculated successfully", "success");
+    
+  } catch (error) {
+    console.error("Route calculation failed:", error);
+    showNotification("Failed to calculate route", "error");
+  }
+}
+
+function displayRoute(route) {
+  // Clear previous route
+  routeLayer.clearLayers();
+  
+  // Convert coordinates to LatLng objects
+  const latLngs = route.coordinates.map(coord => L.latLng(coord[0], coord[1]));
+  
+  // Draw the route
+  L.polyline(latLngs, {
+    color: '#3b82f6',
+    weight: 5
+  }).addTo(routeLayer);
+  
+  // Add start marker
+  L.marker(latLngs[0], {
+    icon: L.divIcon({
+      html: '<i class="fas fa-circle text-blue-600 text-2xl"></i>',
+      className: 'user-location-marker'
+    })
+  }).addTo(routeLayer).bindPopup("Start Point");
+  
+  // Add end marker
+  L.marker(latLngs[latLngs.length - 1], {
+    icon: L.divIcon({
+      html: '<i class="fas fa-flag text-red-600 text-2xl"></i>',
+      className: 'destination-marker'
+    })
+  }).addTo(routeLayer).bindPopup("Destination");
+  
+  // Fit map to route bounds
+  floodMap.fitBounds(L.latLngBounds(latLngs));
+}
 </body>
 </html>
