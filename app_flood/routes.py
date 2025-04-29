@@ -28,6 +28,32 @@ def get_db():
             time.sleep(2)
     raise Exception("DB connection failed after retries.")
 
+# ===== DATABASE CONNECTION TEST ROUTE =====
+@bp.route('/test-db')
+def test_db():
+    try:
+        # Try connecting to the database
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT 1')  # A simple query to test connection
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        # If successful, return success response
+        return jsonify({
+            'success': True,
+            'message': 'Database connected successfully',
+            'result': result
+        })
+    except Exception as err:
+        current_app.logger.error(f"Database connection failed: {err}")
+        return jsonify({
+            'success': False,
+            'message': 'Database connection failed',
+            'error': str(err)
+        }), 500
+
 # ===== DASHBOARD METRICS HELPER =====
 def get_dashboard_metrics():
     conn = None
