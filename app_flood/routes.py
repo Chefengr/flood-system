@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, render_template, current_app
-import mysql.connector
+import psycopg2
 from datetime import datetime
 import os
 import time
@@ -7,12 +7,7 @@ import time
 bp = Blueprint('routes', __name__)
 
 # ===== DATABASE CONFIG =====
-db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'flood_detection')
-}
+DATABASE_URL = os.getenv("DATABASE_URL")  # Use the DATABASE_URL from your .env
 
 # ===== DATABASE HELPER =====
 def get_db():
@@ -20,9 +15,9 @@ def get_db():
     max_retries = 3
     while retry_count < max_retries:
         try:
-            conn = mysql.connector.connect(**db_config)
+            conn = psycopg2.connect(DATABASE_URL, sslmode='require')  # Connect using psycopg2
             return conn
-        except mysql.connector.Error as err:
+        except psycopg2.Error as err:
             retry_count += 1
             current_app.logger.error(f"DB connection failed (attempt {retry_count}): {err}")
             time.sleep(2)
@@ -72,7 +67,7 @@ def get_dashboard_metrics():
             FROM (
                 SELECT node_id, water_level, flood_status, timestamp
                 FROM sensor_data
-                WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                WHERE timestamp >= NOW() - INTERVAL '1 hour'
                 ORDER BY timestamp DESC
             ) AS recent_data;
         """)
@@ -82,7 +77,7 @@ def get_dashboard_metrics():
             SELECT COUNT(*) AS active_alerts
             FROM flood_alerts
             WHERE status = 'ACTIVE'
-            AND timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            AND timestamp >= NOW() - INTERVAL '24 hour'
         """)
         alerts = cursor.fetchone()
 
@@ -91,7 +86,7 @@ def get_dashboard_metrics():
         current_app.logger.error(f"Error fetching dashboard metrics: {str(e)}")
         return None
     finally:
-        if conn and conn.is_connected():
+        if conn:
             conn.close()
 
 # ===== STATIC PAGE ROUTES =====
@@ -155,5 +150,5 @@ def receive_device_data():
         current_app.logger.error(f"Error saving data: {str(e)}")
         return jsonify({"error": "Internal Server Error"}), 500
     finally:
-        if conn and conn.is_connected():
+        if conn:
             conn.close()
