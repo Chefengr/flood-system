@@ -2,9 +2,7 @@ import psycopg2
 import os
 
 # Use your actual Render PostgreSQL URL or your environment-configured values
-DATABASE_URL = os.getenv('postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system
-')
-
+DATABASE_URL = 'postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system'
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(DATABASE_URL)
 
