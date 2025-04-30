@@ -10,8 +10,7 @@ bp = Blueprint('routes', __name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if not DATABASE_URL:
-    raise ValueError("postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system")
-  # Use the DATABASE_URL from your .env
+    raise ValueError("❌ DATABASE_URL environment variable not set")
 
 # ===== DATABASE HELPER =====
 def get_db():
