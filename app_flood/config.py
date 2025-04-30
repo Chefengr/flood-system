@@ -1,6 +1,8 @@
+import os
+
+# For PostgreSQL
 db_config = {
-    'host': os.environ.get('DB_HOST', 'localhost'),
-    'user': os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', ''),
-    'database': os.environ.get('DB_NAME', 'flood_detection')
+    'SQLALCHEMY_DATABASE_URI': os.environ.get('postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system
+'),
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False
 }
