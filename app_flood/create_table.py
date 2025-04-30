@@ -5,7 +5,7 @@ import os
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable not set")
+    raise ValueError("postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system")
 
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(DATABASE_URL)
