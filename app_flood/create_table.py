@@ -1,37 +1,44 @@
 import psycopg2
 import os
 
-# Use your actual Render PostgreSQL URL or your environment-configured values
+# Get the PostgreSQL URL from the environment variable
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+# If the DATABASE_URL environment variable is not set, raise an error
 if not DATABASE_URL:
-    raise ValueError("postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system")
+    raise ValueError("❌ DATABASE_URL environment variable not set. Please set it with your PostgreSQL URL.")
 
 # Connect to the PostgreSQL database
-conn = psycopg2.connect(DATABASE_URL)
-
-# Create a cursor object
-cur = conn.cursor()
-
-# Create the table
-create_table_query = """
-CREATE TABLE IF NOT EXISTS device_data (
-    id SERIAL PRIMARY KEY,
-    temperature REAL,
-    humidity REAL,
-    water_level REAL,
-    severity VARCHAR(20),
-    status VARCHAR(20),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-"""
-
 try:
-    cur.execute(create_table_query)
-    conn.commit()
-    print("✅ Table 'device_data' created successfully!")
-except Exception as e:
-    print("❌ Failed to create table:", e)
+    conn = psycopg2.connect(DATABASE_URL)
+    print("✅ Connected to the database successfully!")
+
+    # Create a cursor object
+    cur = conn.cursor()
+
+    # Create the table
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS device_data (
+        id SERIAL PRIMARY KEY,
+        temperature REAL,
+        humidity REAL,
+        water_level REAL,
+        severity VARCHAR(20),
+        status VARCHAR(20),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """
+
+    # Try to create the table
+    try:
+        cur.execute(create_table_query)
+        conn.commit()
+        print("✅ Table 'device_data' created successfully!")
+    except Exception as e:
+        print("❌ Failed to create table:", e)
+
 finally:
-    cur.close()
-    conn.close()
+    if conn:
+        cur.close()
+        conn.close()
+        print("✅ Database connection closed.")
