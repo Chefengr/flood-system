@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # Database configuration
 # You can use the DATABASE_URL environment variable if you have it set or fallback to local PostgreSQL configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood_system
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('postgresql://chefengr:YCREdgJEa9HTb2dTQa7ehDbbveTDLK19@dpg-d098h4adbo4c73buoe7g-a/flood-system-1
 ', 'postgresql://localhost/flood_detection')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Optional, to disable the modification tracking feature
 
