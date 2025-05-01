@@ -51,6 +51,34 @@ def test_db():
             'message': 'Database connection failed',
             'error': str(err)
         }), 500
+        # ===== API ROUTE TO GET SENSOR DATA =====
+@bp.route('/api/sensor-data', methods=['GET'])
+def get_sensor_data():
+    conn = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)  # Use dictionary=True for easy JSON conversion
+        
+        # Fetch sensor data (modify the query as per your needs)
+        cursor.execute("""
+            SELECT node_id, water_level, latitude, longitude, temperature, humidity, severity, flood_status, timestamp
+            FROM sensor_data
+            ORDER BY timestamp DESC
+            LIMIT 10;  -- You can adjust the LIMIT or add pagination logic
+        """)
+        sensor_data = cursor.fetchall()  # Fetch all rows
+        
+        if not sensor_data:
+            return jsonify({"error": "No sensor data found"}), 404
+
+        return jsonify(sensor_data)  # Return data as JSON
+    except Exception as e:
+        current_app.logger.error(f"Error fetching sensor data: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
+    finally:
+        if conn:
+            conn.close()
+
 
 # ===== DASHBOARD METRICS HELPER =====
 def get_dashboard_metrics():
